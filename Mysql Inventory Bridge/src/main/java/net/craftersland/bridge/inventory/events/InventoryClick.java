@@ -1,6 +1,6 @@
 package net.craftersland.bridge.inventory.events;
 
-import net.craftersland.bridge.inventory.Inv;
+import net.craftersland.bridge.inventory.Main;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,9 +9,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class InventoryClick implements Listener {
 	
-	private Inv pd;
+	private Main pd;
 	
-	public InventoryClick(Inv pd) {
+	public InventoryClick(Main pd) {
 		this.pd = pd;
 	}
 	

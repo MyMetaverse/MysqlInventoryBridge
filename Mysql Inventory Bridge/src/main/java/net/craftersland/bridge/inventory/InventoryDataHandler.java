@@ -13,11 +13,11 @@ import net.craftersland.bridge.inventory.objects.InventorySyncTask;
 
 public class InventoryDataHandler {
 	
-	private Inv pd;
+	private Main pd;
 	private Set<Player> playersInSync = new HashSet<Player>();
 	private Set<Player> playersDisconnectSave = new HashSet<Player>();
 	
-	public InventoryDataHandler(Inv pd) {
+	public InventoryDataHandler(Main pd) {
 		this.pd = pd;
 	}
 	
@@ -37,7 +37,7 @@ public class InventoryDataHandler {
 	public void setPlayerData(final Player p, DatabaseInventoryData data, InventorySyncData syncData, boolean cancelTask) {
 		if (playersInSync.contains(p) == false) {
 			//Inventory and Armor sync for lower mc versions then 1.9
-			if (Inv.is19Server == false) {
+			if (Main.is19Server == false) {
 				setInventory(p, data, syncData);
 				if (pd.getConfigHandler().getBoolean("General.syncArmorEnabled") == true) {
 					setArmor(p, data, syncData);
@@ -67,7 +67,7 @@ public class InventoryDataHandler {
 	public void onDataSaveFunction(Player p, Boolean datacleanup, String syncStatus, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
 		if (playersDisconnectSave.contains(p) == true) {
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Save Data - Canceled - " + p.getName());
+				Main.log.info("Inventory Debug - Save Data - Canceled - " + p.getName());
 			}
 			return;
 		}
@@ -79,17 +79,17 @@ public class InventoryDataHandler {
 			String inv = "none";
 			String armor = "none";
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Save Data - Start - " + p.getName());
+				Main.log.info("Inventory Debug - Save Data - Start - " + p.getName());
 			}
 			try {
 				if (inventoryDisconnect != null) {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
 					}
 					inv = encodeItems(inventoryDisconnect);
 				} else {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
 					}
 					inv = encodeItems(p.getInventory().getContents());
 				}
@@ -115,7 +115,7 @@ public class InventoryDataHandler {
 	}
 	
 	public void onJoinFunction(final Player p) {
-		if (Inv.isDisabling == false) {
+		if (Main.isDisabling == false) {
 			if (playersInSync.contains(p) == false) {
 				if (pd.getInvMysqlInterface().hasAccount(p) == true) {
 					final InventorySyncData syncData = new InventorySyncData();
@@ -164,22 +164,22 @@ public class InventoryDataHandler {
 	
 	private void setInventory(final Player p, DatabaseInventoryData data, InventorySyncData syncData) {
 		if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-			Inv.log.info("Inventory Debug - Set Data - Start- " + p.getName());
+			Main.log.info("Inventory Debug - Set Data - Start- " + p.getName());
 		}
 		if (data.getRawInventory().matches("none") == false) {
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Set Data - Loading inventory - " + p.getName());
+				Main.log.info("Inventory Debug - Set Data - Loading inventory - " + p.getName());
 			}
 			try {
 				p.getInventory().setContents(decodeItems(data.getRawInventory()));
 				if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-					Inv.log.info("Inventory Debug - Set Data - Inventory set - " + p.getName());
+					Main.log.info("Inventory Debug - Set Data - Inventory set - " + p.getName());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 				if (syncData.getBackupInventory() != null) {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - Loading backup inventory - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - Loading backup inventory - " + p.getName());
 					}
 					p.getInventory().setContents(syncData.getBackupInventory());
 					p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessage.inventorySyncError"));
@@ -187,13 +187,13 @@ public class InventoryDataHandler {
 					p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessage.inventorySyncBackup"));
 				} else {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - No backup inventory found! - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - No backup inventory found! - " + p.getName());
 					}
 				}
 			}
 		} else {
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Set Data - Restoring local inventory - " + p.getName());
+				Main.log.info("Inventory Debug - Set Data - Restoring local inventory - " + p.getName());
 			}
 			p.getInventory().setContents(syncData.getBackupInventory());
 		}
@@ -202,23 +202,23 @@ public class InventoryDataHandler {
 	
 	private void setInventoryNew(final Player p, DatabaseInventoryData data, InventorySyncData syncData) {
 		if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-			Inv.log.info("Inventory Debug - Set Data - Start- " + p.getName());
+			Main.log.info("Inventory Debug - Set Data - Start- " + p.getName());
 		}
 		if (data.getRawInventory().matches("none") == false) {
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Set Data - Loading inventory - " + p.getName());
+				Main.log.info("Inventory Debug - Set Data - Loading inventory - " + p.getName());
 			}
 			try {
 				p.getInventory().setContents(decodeItems(data.getRawInventory()));
 				p.getInventory().setArmorContents(syncData.getBackupArmor());
 				if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-					Inv.log.info("Inventory Debug - Set Data - Inventory set - " + p.getName());
+					Main.log.info("Inventory Debug - Set Data - Inventory set - " + p.getName());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 				if (syncData.getBackupInventory() != null) {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - Loading backup inventory - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - Loading backup inventory - " + p.getName());
 					}
 					p.getInventory().setContents(syncData.getBackupInventory());
 					p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessage.inventorySyncError"));
@@ -226,13 +226,13 @@ public class InventoryDataHandler {
 					p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessage.inventorySyncBackup"));
 				} else {
 					if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-						Inv.log.info("Inventory Debug - Set Data - No backup inventory found! - " + p.getName());
+						Main.log.info("Inventory Debug - Set Data - No backup inventory found! - " + p.getName());
 					}
 				}
 			}
 		} else {
 			if (pd.getConfigHandler().getBoolean("Debug.InventorySync") == true) {
-				Inv.log.info("Inventory Debug - Set Data - Restoring local inventory - " + p.getName());
+				Main.log.info("Inventory Debug - Set Data - Restoring local inventory - " + p.getName());
 			}
 			p.getInventory().setContents(syncData.getBackupInventory());
 		}

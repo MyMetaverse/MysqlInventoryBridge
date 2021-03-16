@@ -1,19 +1,18 @@
 package net.craftersland.bridge.inventory.objects;
 
+import net.craftersland.bridge.inventory.Main;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.craftersland.bridge.inventory.Inv;
-
 public class InventorySyncTask extends BukkitRunnable {
 	
-	private Inv pd;
+	private Main pd;
 	private long startTime;
 	private Player p;
 	private boolean inProgress = false;
 	private InventorySyncData syncD; 
 	
-	public InventorySyncTask(Inv pd, long start, Player player, InventorySyncData syncData) {
+	public InventorySyncTask(Main pd, long start, Player player, InventorySyncData syncData) {
 		this.pd = pd;
 		this.startTime = start;
 		this.p = player;

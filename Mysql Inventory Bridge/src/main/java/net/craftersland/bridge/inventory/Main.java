@@ -1,5 +1,8 @@
 package net.craftersland.bridge.inventory;
 
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import net.craftersland.bridge.inventory.database.InvMysqlInterface;
@@ -9,12 +12,17 @@ import net.craftersland.bridge.inventory.events.InventoryClick;
 import net.craftersland.bridge.inventory.events.PlayerJoin;
 import net.craftersland.bridge.inventory.events.PlayerQuit;
 
+import net.minecraft.server.v1_16_R3.*;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
-public class Inv extends JavaPlugin {
+public class Main extends JavaPlugin {
 	
 	public static Logger log;
 	public boolean useProtocolLib = false;
@@ -115,4 +123,52 @@ public class Inv extends JavaPlugin {
         	log.warning("ProtocolLib dependency not found. No support for modded items NBT data!");
         }
 	}
+
+	@Override
+	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+
+		if (command.getName().equals("mib")) {
+
+			if (args.length == 0) {
+				sender.sendMessage(ChatColor.RED + "Nothing to show.");
+			} else if (args[0].equalsIgnoreCase("test")) {
+				sender.sendMessage(ChatColor.GREEN + "Running test command.");
+
+				try {
+					File file = new File(this.getDataFolder(), "testdata.dat");
+
+					if (!file.exists()) {
+						sender.sendMessage(ChatColor.RED + "Test file doesn't exists.");
+						return true;
+					}
+
+					net.minecraft.server.v1_16_R3.NBTTagCompound nbtTagCompound = NBTCompressedStreamTools.a(file);
+
+					if (nbtTagCompound.hasKey("Inventory")) {
+						// NBTTagList inventoryNBTBase = nbtTagCompound.getList("Inventory", 10);
+						Field f = nbtTagCompound.getClass().getField("map");
+						f.setAccessible(true);
+						Map<String, NBTBase> map = (Map<String, NBTBase>) f.get(nbtTagCompound);
+						NBTTagList inventoryNBTBase = (NBTTagList) map.get("Inventory");
+						System.out.println(inventoryNBTBase.getTypeId());
+						for (NBTBase nbtBase : inventoryNBTBase) {
+							System.out.println("type: " + nbtBase.getTypeId());
+							ItemStack itemStack = ItemStack.a((NBTTagCompound) nbtBase);
+							System.out.println(itemStack.toString());
+						}
+					}
+
+				} catch (IOException | NoSuchFieldException | IllegalAccessException e) {
+					e.printStackTrace();
+					sender.sendMessage(ChatColor.RED + "Something went wrong :s");
+				}
+
+			}
+
+			return true;
+		}
+
+		return true;
+	}
+
 }

@@ -8,16 +8,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import net.craftersland.bridge.inventory.Inv;
+import net.craftersland.bridge.inventory.Main;
 
 import org.bukkit.Bukkit;
 
 public class MysqlSetup {
 	
 	private Connection conn = null;
-	private Inv eco;
+	private Main eco;
 	
-	public MysqlSetup(Inv eco) {
+	public MysqlSetup(Main eco) {
 		this.eco = eco;
 		connectToDatabase();
 		setupDatabase();
@@ -26,7 +26,7 @@ public class MysqlSetup {
 	}
 	
 	public void connectToDatabase() {
-		Inv.log.info("Connecting to the database...");
+		Main.log.info("Connecting to the database...");
 		try {
        	 	//Load Drivers
             Class.forName("com.mysql.jdbc.Driver");
@@ -41,13 +41,13 @@ public class MysqlSetup {
             conn = DriverManager.getConnection("jdbc:mysql://" + eco.getConfigHandler().getString("database.mysql.host") + ":" + eco.getConfigHandler().getString("database.mysql.port") + "/" + eco.getConfigHandler().getString("database.mysql.databaseName"), properties);
            
           } catch (ClassNotFoundException e) {
-        	  Inv.log.severe("Could not locate drivers for mysql! Error: " + e.getMessage());
+        	  Main.log.severe("Could not locate drivers for mysql! Error: " + e.getMessage());
             return;
           } catch (SQLException e) {
-        	  Inv.log.severe("Could not connect to mysql database! Error: " + e.getMessage());
+        	  Main.log.severe("Could not connect to mysql database! Error: " + e.getMessage());
             return;
           }
-		Inv.log.info("Database connection successful!");
+		Main.log.info("Database connection successful!");
 	}
 	
 	public void setupDatabase() {
@@ -59,7 +59,7 @@ public class MysqlSetup {
 		        query.execute();
 		      } catch (SQLException e) {
 		        e.printStackTrace();
-		        Inv.log.severe("Error creating tables! Error: " + e.getMessage());
+		        Main.log.severe("Error creating tables! Error: " + e.getMessage());
 		      } finally {
 		    	  try {
 		    		  if (query != null) {
@@ -80,19 +80,19 @@ public class MysqlSetup {
 	public void checkConnection() {
 		try {
 			if (conn == null) {
-				Inv.log.warning("Connection failed. Reconnecting...");
+				Main.log.warning("Connection failed. Reconnecting...");
 				reConnect();
 			}
 			if (!conn.isValid(3)) {
-				Inv.log.warning("Connection is idle or terminated. Reconnecting...");
+				Main.log.warning("Connection is idle or terminated. Reconnecting...");
 				reConnect();
 			}
 			if (conn.isClosed() == true) {
-				Inv.log.warning("Connection is closed. Reconnecting...");
+				Main.log.warning("Connection is closed. Reconnecting...");
 				reConnect();
 			}
 		} catch (Exception e) {
-			Inv.log.severe("Could not reconnect to Database! Error: " + e.getMessage());
+			Main.log.severe("Could not reconnect to Database! Error: " + e.getMessage());
 		}
 	}
 	
@@ -102,7 +102,7 @@ public class MysqlSetup {
 			long end = 0;
 			
 		    start = System.currentTimeMillis();
-		    Inv.log.info("Attempting to establish a connection to the MySQL server!");
+		    Main.log.info("Attempting to establish a connection to the MySQL server!");
             Class.forName("com.mysql.jdbc.Driver");
             Properties properties = new Properties();
             properties.setProperty("user", eco.getConfigHandler().getString("database.mysql.user"));
@@ -117,18 +117,18 @@ public class MysqlSetup {
             //properties.setProperty("connectionCollation", "utf8mb4_unicode_ci");
             conn = DriverManager.getConnection("jdbc:mysql://" + eco.getConfigHandler().getString("database.mysql.host") + ":" + eco.getConfigHandler().getString("database.mysql.port") + "/" + eco.getConfigHandler().getString("database.mysql.databaseName"), properties);
 		    end = System.currentTimeMillis();
-		    Inv.log.info("Connection to MySQL server established!");
-		    Inv.log.info("Connection took " + ((end - start)) + "ms!");
+		    Main.log.info("Connection to MySQL server established!");
+		    Main.log.info("Connection took " + ((end - start)) + "ms!");
             return true;
 		} catch (Exception e) {
-			Inv.log.severe("Error re-connecting to the database! Error: " + e.getMessage());
+			Main.log.severe("Error re-connecting to the database! Error: " + e.getMessage());
 			return false;
 		}
 	}
 	
 	public void closeConnection() {
 		try {
-			Inv.log.info("Closing database connection...");
+			Main.log.info("Closing database connection...");
 			conn.close();
 			conn = null;
 		} catch (SQLException e) {
@@ -176,7 +176,7 @@ public class MysqlSetup {
 			        query3.execute();
 			    }
 			} catch (Exception e) {
-				Inv.log.severe("Error updating table! Error: " + e.getMessage());
+				Main.log.severe("Error updating table! Error: " + e.getMessage());
 			} finally {
 	    		try {
 	    			if (query1 != null) {
@@ -209,7 +209,7 @@ public class MysqlSetup {
 						long inactivityMils = inactivityDays * 24 * 60 * 60 * 1000;
 						long curentTime = System.currentTimeMillis();
 						long inactiveTime = curentTime - inactivityMils;
-						Inv.log.info("Database maintenance task started...");
+						Main.log.info("Database maintenance task started...");
 						PreparedStatement preparedStatement = null;
 						try {
 							String sql = "DELETE FROM `" + eco.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `last_seen` < ?";
@@ -227,7 +227,7 @@ public class MysqlSetup {
 								e.printStackTrace();
 							}
 						}
-						Inv.log.info("Database maintenance complete!");
+						Main.log.info("Database maintenance complete!");
 					}
 				}
 				

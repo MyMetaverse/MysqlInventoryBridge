@@ -3,16 +3,16 @@ package net.craftersland.bridge.inventory.objects;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.craftersland.bridge.inventory.Inv;
+import net.craftersland.bridge.inventory.Main;
 
 public class SyncCompleteTask extends BukkitRunnable {
 	
-	private Inv pd;
+	private Main pd;
 	private long startTime;
 	private Player p;
 	private boolean inProgress = false;
 	
-	public SyncCompleteTask(Inv pd, long start, Player player) {
+	public SyncCompleteTask(Main pd, long start, Player player) {
 		this.pd = pd;
 		this.startTime = start;
 		this.p = player;

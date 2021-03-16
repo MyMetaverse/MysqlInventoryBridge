@@ -8,16 +8,16 @@ import org.bukkit.entity.Player;
 
 public class BackgroundTask {
 	
-	private Inv m;
+	private Main m;
 	
-	public BackgroundTask(Inv m) {
+	public BackgroundTask(Main m) {
 		this.m = m;
 		runTask();
 	}
 	
 	private void runTask() {
 		if (m.getConfigHandler().getBoolean("General.saveDataTask.enabled") == true) {
-			Inv.log.info("Data save task is enabled.");
+			Main.log.info("Data save task is enabled.");
 			Bukkit.getScheduler().runTaskTimerAsynchronously(m, new Runnable() {
 
 				@Override
@@ -27,7 +27,7 @@ public class BackgroundTask {
 				
 			}, m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L, m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L);
 		} else {
-			Inv.log.info("Data save task is disabled.");
+			Main.log.info("Data save task is disabled.");
 		}
 	}
 	
@@ -36,7 +36,7 @@ public class BackgroundTask {
 			if (Bukkit.getOnlinePlayers().isEmpty() == false) {
 				List<Player> onlinePlayers = new ArrayList<Player>(Bukkit.getOnlinePlayers());
 				if (m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages") == false) {
-					Inv.log.info("Saving online players data...");
+					Main.log.info("Saving online players data...");
 				}
 				for (Player p : onlinePlayers) {
 					if (p.isOnline() == true) {
@@ -44,7 +44,7 @@ public class BackgroundTask {
 					}
 				}
 				if (m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages") == false) {
-					Inv.log.info("Data save complete for " + onlinePlayers.size() + " players.");
+					Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");
 				}
 				onlinePlayers.clear();
 			}
@@ -52,7 +52,7 @@ public class BackgroundTask {
 	}
 	
 	public void onShutDownDataSave() {
-		Inv.log.info("Saving online players data...");
+		Main.log.info("Saving online players data...");
 		List<Player> onlinePlayers = new ArrayList<Player>(Bukkit.getOnlinePlayers());
 		
 		for (Player p : onlinePlayers) {
@@ -60,7 +60,7 @@ public class BackgroundTask {
 				m.getInventoryDataHandler().onDataSaveFunction(p, false, "true", null, null);
 			}
 		}
-		Inv.log.info("Data save complete for " + onlinePlayers.size() + " players.");
+		Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");
 	}
 
 }

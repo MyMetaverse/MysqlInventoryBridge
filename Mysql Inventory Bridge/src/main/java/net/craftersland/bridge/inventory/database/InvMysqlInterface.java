@@ -5,26 +5,26 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import net.craftersland.bridge.inventory.Main;
 import org.bukkit.entity.Player;
 
-import net.craftersland.bridge.inventory.Inv;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 
 public class InvMysqlInterface {
 	
-	private Inv inv;
+	private Main main;
 	
-	public InvMysqlInterface(Inv inv) {
-		this.inv = inv;
+	public InvMysqlInterface(Main main) {
+		this.main = main;
 	}
 	
 	public boolean hasAccount(Player player) {
 		PreparedStatement preparedUpdateStatement = null;
 		ResultSet result = null;
-		Connection conn = inv.getDatabaseManager().getConnection();
+		Connection conn = main.getDatabaseManager().getConnection();
 		if (conn != null) {
 			try {			
-				String sql = "SELECT `player_uuid` FROM `" + inv.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
+				String sql = "SELECT `player_uuid` FROM `" + main.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
 		        preparedUpdateStatement = conn.prepareStatement(sql);
 		        preparedUpdateStatement.setString(1, player.getUniqueId().toString());
 		        
@@ -33,7 +33,7 @@ public class InvMysqlInterface {
 		        	return true;
 		        }
 		      } catch (SQLException e) {
-				  Inv.log.warning("Error: " + e.getMessage());
+				  Main.log.warning("Error: " + e.getMessage());
 				  e.printStackTrace();
 		      } finally {
 		    	  try {
@@ -53,10 +53,10 @@ public class InvMysqlInterface {
 	
 	public boolean createAccount(Player player) {
 		PreparedStatement preparedStatement = null;
-		Connection conn = inv.getDatabaseManager().getConnection();
+		Connection conn = main.getDatabaseManager().getConnection();
 		if (conn != null) {
 			try {
-				String sql = "INSERT INTO `" + inv.getConfigHandler().getString("database.mysql.tableName") + "`(`player_uuid`, `player_name`, `inventory`, `armor`, `sync_complete`, `last_seen`) " + "VALUES(?, ?, ?, ?, ?, ?)";
+				String sql = "INSERT INTO `" + main.getConfigHandler().getString("database.mysql.tableName") + "`(`player_uuid`, `player_name`, `inventory`, `armor`, `sync_complete`, `last_seen`) " + "VALUES(?, ?, ?, ?, ?, ?)";
 				preparedStatement = conn.prepareStatement(sql);
 		        preparedStatement.setString(1, player.getUniqueId().toString());
 		        preparedStatement.setString(2, player.getName());
@@ -68,7 +68,7 @@ public class InvMysqlInterface {
 		        preparedStatement.executeUpdate();
 		        return true;
 		      } catch (SQLException e) {
-				  Inv.log.warning("Error: " + e.getMessage());
+				  Main.log.warning("Error: " + e.getMessage());
 				  e.printStackTrace();
 		      } finally {
 		    	  try {
@@ -88,10 +88,10 @@ public class InvMysqlInterface {
 			createAccount(player);
 		}
 		PreparedStatement preparedUpdateStatement = null;
-		Connection conn = inv.getDatabaseManager().getConnection();
+		Connection conn = main.getDatabaseManager().getConnection();
 		if (conn != null) {
 			try {
-				String data = "UPDATE `" + inv.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `player_name` = ?" + ", `inventory` = ?" + ", `armor` = ?" + ", `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
+				String data = "UPDATE `" + main.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `player_name` = ?" + ", `inventory` = ?" + ", `armor` = ?" + ", `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
 				preparedUpdateStatement = conn.prepareStatement(data);
 				preparedUpdateStatement.setString(1, player.getName());
 				preparedUpdateStatement.setString(2, inventory);
@@ -103,7 +103,7 @@ public class InvMysqlInterface {
 				preparedUpdateStatement.executeUpdate();
 				return true;
 			} catch (SQLException e) {
-				Inv.log.warning("Error: " + e.getMessage());
+				Main.log.warning("Error: " + e.getMessage());
 				e.printStackTrace();
 			} finally {
 				try {
@@ -120,10 +120,10 @@ public class InvMysqlInterface {
 	
 	public boolean setSyncStatus(Player player, String syncStatus) {
 		PreparedStatement preparedUpdateStatement = null;
-		Connection conn = inv.getDatabaseManager().getConnection();
+		Connection conn = main.getDatabaseManager().getConnection();
 		if (conn != null) {
 			try {
-				String data = "UPDATE `" + inv.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
+				String data = "UPDATE `" + main.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
 				preparedUpdateStatement = conn.prepareStatement(data);
 				preparedUpdateStatement.setString(1, syncStatus);
 				preparedUpdateStatement.setString(2, String.valueOf(System.currentTimeMillis()));
@@ -132,7 +132,7 @@ public class InvMysqlInterface {
 				preparedUpdateStatement.executeUpdate();
 				return true;
 			} catch (SQLException e) {
-				Inv.log.warning("Error: " + e.getMessage());
+				Main.log.warning("Error: " + e.getMessage());
 				e.printStackTrace();
 			} finally {
 				try {
@@ -153,10 +153,10 @@ public class InvMysqlInterface {
 		}
 		PreparedStatement preparedUpdateStatement = null;
 		ResultSet result = null;
-		Connection conn = inv.getDatabaseManager().getConnection();
+		Connection conn = main.getDatabaseManager().getConnection();
 		if (conn != null) {
 			try {
-				String sql = "SELECT * FROM `" + inv.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
+				String sql = "SELECT * FROM `" + main.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
 		        preparedUpdateStatement = conn.prepareStatement(sql);
 		        preparedUpdateStatement.setString(1, player.getUniqueId().toString());
 		        
@@ -165,7 +165,7 @@ public class InvMysqlInterface {
 		        	return new DatabaseInventoryData(result.getString("inventory"), result.getString("armor"), result.getString("sync_complete"), result.getString("last_seen"));
 		        }
 		    } catch (SQLException e) {
-				Inv.log.warning("Error: " + e.getMessage());
+				Main.log.warning("Error: " + e.getMessage());
 				e.printStackTrace();
 		    } finally {
 		    	try {

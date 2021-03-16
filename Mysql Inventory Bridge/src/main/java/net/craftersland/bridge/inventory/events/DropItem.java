@@ -1,6 +1,6 @@
 package net.craftersland.bridge.inventory.events;
 
-import net.craftersland.bridge.inventory.Inv;
+import net.craftersland.bridge.inventory.Main;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -8,9 +8,9 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 
 public class DropItem implements Listener {
 	
-	private Inv pd;
+	private Main pd;
 	
-	public DropItem(Inv pd) {
+	public DropItem(Main pd) {
 		this.pd = pd;
 	}
 	

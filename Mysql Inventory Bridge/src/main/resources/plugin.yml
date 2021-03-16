@@ -1,5 +1,5 @@
 name: MysqlInventoryBridge
-main: net.craftersland.bridge.inventory.Inv
+main: net.craftersland.bridge.inventory.Main
 version: 2.4.1-MyMetaverseEdited-1.0.0
 authors:
   - CraftersLand
@@ -9,3 +9,8 @@ load: STARTUP
 api-version: 1.16
 description: Sync players inventorys over many servers using MySQL. This is an edited version for and by MyMetaverse
 softdepend: [ProtocolLib]
+commands:
+  mib:
+    usage: /<command>
+    description: Main command for MIB
+    aliases: [ MysqlInventoryBridge ]
