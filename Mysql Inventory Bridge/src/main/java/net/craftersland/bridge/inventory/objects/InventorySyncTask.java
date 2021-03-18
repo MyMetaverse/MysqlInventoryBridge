@@ -6,11 +6,11 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class InventorySyncTask extends BukkitRunnable {
 	
-	private Main pd;
-	private long startTime;
-	private Player p;
+	private final Main pd;
+	private final long startTime;
+	private final Player p;
 	private boolean inProgress = false;
-	private InventorySyncData syncD; 
+	private final InventorySyncData syncD;
 	
 	public InventorySyncTask(Main pd, long start, Player player, InventorySyncData syncData) {
 		this.pd = pd;
@@ -21,21 +21,21 @@ public class InventorySyncTask extends BukkitRunnable {
 
 	@Override
 	public void run() {
-		if (inProgress == false) {
+		if (!inProgress) {
 			if (p != null) {
-				if (p.isOnline() == true) {
+				if (p.isOnline()) {
 					inProgress = true;
-					DatabaseInventoryData data = pd.getInvMysqlInterface().getData(p);
+					DatabaseInventoryData data = pd.getInvMysqlInterface().getData(p.getUniqueId());
 					if (data.getSyncStatus().matches("true")) {
-						pd.getInventoryDataHandler().setPlayerData(p, data, syncD, true);
+						pd.getInventoryDataHandler().setPlayerData(p, data, syncD);
 						inProgress = false;
 						this.cancel();
 					} else if (System.currentTimeMillis() - Long.parseLong(data.getLastSeen()) >= 600 * 1000) {
-						pd.getInventoryDataHandler().setPlayerData(p, data, syncD, true);
+						pd.getInventoryDataHandler().setPlayerData(p, data, syncD);
 						inProgress = false;
 						this.cancel();
 					} else if (System.currentTimeMillis() - startTime >= 22 * 1000) {
-						pd.getInventoryDataHandler().setPlayerData(p, data, syncD, true);
+						pd.getInventoryDataHandler().setPlayerData(p, data, syncD);
 						inProgress = false;
 						this.cancel();
 					}

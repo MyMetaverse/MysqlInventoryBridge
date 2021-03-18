@@ -9,7 +9,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 public class InventoryClick implements Listener {
 	
-	private Main pd;
+	private final Main pd;
 	
 	public InventoryClick(Main pd) {
 		this.pd = pd;
@@ -18,7 +18,7 @@ public class InventoryClick implements Listener {
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent event) {
 		Player p = (Player) event.getWhoClicked();
-		if (pd.getInventoryDataHandler().isSyncComplete(p) == false) {
+		if (!pd.getInventoryDataHandler().isSyncComplete(p)) {
 			event.setCancelled(true);
 		}
 	}

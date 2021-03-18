@@ -19,19 +19,12 @@ public class PlayerQuit implements Listener {
 	
 	@EventHandler
 	public void onDisconnect(final PlayerQuitEvent event) {
-		if (Main.isDisabling == false) {
-			Bukkit.getScheduler().runTaskLaterAsynchronously(main, new Runnable() {
-
-				@Override
-				public void run() {
-					if (event.getPlayer() != null) {
-						Player p = event.getPlayer();
-						ItemStack[] inventory = main.getInventoryDataHandler().getInventory(p);
-						ItemStack[] armor = main.getInventoryDataHandler().getArmor(p);
-						main.getInventoryDataHandler().onDataSaveFunction(p, true, "true", inventory, armor);
-					}
-				}
-				
+		if (!Main.isDisabling) {
+			final Player p = event.getPlayer();
+			Bukkit.getScheduler().runTaskLaterAsynchronously(main, () -> {
+				ItemStack[] inventory = main.getInventoryDataHandler().getInventory(p);
+				ItemStack[] armor = main.getInventoryDataHandler().getArmor(p);
+				main.getInventoryDataHandler().onDataSaveFunction(p, true, "true", inventory, armor);
 			}, 2L);
 		}
 	}

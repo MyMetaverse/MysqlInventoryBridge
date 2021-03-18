@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 
 public class PlayerJoin implements Listener {
 	
-	private Main main;
+	private final Main main;
 	
 	public PlayerJoin(Main main) {
 		this.main = main;
@@ -19,20 +19,13 @@ public class PlayerJoin implements Listener {
 	
 	@EventHandler
 	public void onLogin(final PlayerJoinEvent event) {		
-		if (Main.isDisabling == false) {
+		if (!Main.isDisabling) {
 			final Player p = event.getPlayer();
-			Bukkit.getScheduler().runTaskLaterAsynchronously(main, new Runnable() {
-
-				@Override
-				public void run() {
-					if (p != null) {
-						if (p.isOnline() == true) {
-							main.getInventoryDataHandler().onJoinFunction(p);
-							new SyncCompleteTask(main, System.currentTimeMillis(), p).runTaskTimerAsynchronously(main, 5L, 20L);
-						}
-					}
+			Bukkit.getScheduler().runTaskLaterAsynchronously(main, () -> {
+				if (p.isOnline()) {
+					main.getInventoryDataHandler().onJoinFunction(p);
+					new SyncCompleteTask(main, System.currentTimeMillis(), p).runTaskTimerAsynchronously(main, 5L, 20L);
 				}
-				
 			}, 5L);
 		}
 	}

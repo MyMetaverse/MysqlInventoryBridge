@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 
 public class BackgroundTask {
 	
-	private Main m;
+	private final Main m;
 	
 	public BackgroundTask(Main m) {
 		this.m = m;
@@ -16,34 +16,29 @@ public class BackgroundTask {
 	}
 	
 	private void runTask() {
-		if (m.getConfigHandler().getBoolean("General.saveDataTask.enabled") == true) {
+		if (m.getConfigHandler().getBoolean("General.saveDataTask.enabled")) {
 			Main.log.info("Data save task is enabled.");
-			Bukkit.getScheduler().runTaskTimerAsynchronously(m, new Runnable() {
-
-				@Override
-				public void run() {
-					runSaveData();
-				}
-				
-			}, m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L, m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L);
+			Bukkit.getScheduler().runTaskTimerAsynchronously(m, this::runSaveData,
+					m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L,
+					m.getConfigHandler().getInteger("General.saveDataTask.interval") * 60 * 20L);
 		} else {
 			Main.log.info("Data save task is disabled.");
 		}
 	}
 	
 	private void runSaveData() {
-		if (m.getConfigHandler().getBoolean("General.saveDataTask.enabled") == true) {
-			if (Bukkit.getOnlinePlayers().isEmpty() == false) {
-				List<Player> onlinePlayers = new ArrayList<Player>(Bukkit.getOnlinePlayers());
-				if (m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages") == false) {
+		if (m.getConfigHandler().getBoolean("General.saveDataTask.enabled")) {
+			if (!Bukkit.getOnlinePlayers().isEmpty()) {
+				List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+				if (!m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages")) {
 					Main.log.info("Saving online players data...");
 				}
 				for (Player p : onlinePlayers) {
-					if (p.isOnline() == true) {
+					if (p.isOnline()) {
 						m.getInventoryDataHandler().onDataSaveFunction(p, false, "false", null, null);
 					}
 				}
-				if (m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages") == false) {
+				if (!m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages")) {
 					Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");
 				}
 				onlinePlayers.clear();
@@ -53,10 +48,10 @@ public class BackgroundTask {
 	
 	public void onShutDownDataSave() {
 		Main.log.info("Saving online players data...");
-		List<Player> onlinePlayers = new ArrayList<Player>(Bukkit.getOnlinePlayers());
+		List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
 		
 		for (Player p : onlinePlayers) {
-			if (p.isOnline() == true) {
+			if (p.isOnline()) {
 				m.getInventoryDataHandler().onDataSaveFunction(p, false, "true", null, null);
 			}
 		}

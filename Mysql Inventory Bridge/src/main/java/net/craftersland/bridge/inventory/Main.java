@@ -1,26 +1,25 @@
 package net.craftersland.bridge.inventory;
 
-import java.io.*;
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.logging.Logger;
-
+import lombok.Getter;
+import net.craftersland.bridge.inventory.database.ConnectionHandler;
 import net.craftersland.bridge.inventory.database.InvMysqlInterface;
 import net.craftersland.bridge.inventory.database.MysqlSetup;
 import net.craftersland.bridge.inventory.events.DropItem;
 import net.craftersland.bridge.inventory.events.InventoryClick;
 import net.craftersland.bridge.inventory.events.PlayerJoin;
 import net.craftersland.bridge.inventory.events.PlayerQuit;
-
-import net.minecraft.server.v1_16_R3.*;
+import net.craftersland.bridge.inventory.migrator.DataMigrator;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.logging.Logger;
 
 public class Main extends JavaPlugin {
 	
@@ -38,6 +37,9 @@ public class Main extends JavaPlugin {
 	private static InvMysqlInterface invMysqlInterface;
 	private static InventoryDataHandler idH;
 	private static BackgroundTask bt;
+
+	@Getter
+	private ConnectionHandler connectionHandler;
 	
 	@Override
     public void onEnable() {
@@ -46,6 +48,7 @@ public class Main extends JavaPlugin {
     	configHandler = new ConfigHandler(this);
     	sH = new SoundHandler(this);
     	checkDependency();
+		connectionHandler = new ConnectionHandler(this);
     	bt = new BackgroundTask(this);
     	databaseManager = new MysqlSetup(this);
     	invMysqlInterface = new InvMysqlInterface(this);
@@ -64,10 +67,8 @@ public class Main extends JavaPlugin {
 		isDisabling = true;
 		Bukkit.getScheduler().cancelTasks(this);
 		HandlerList.unregisterAll(this);
-		if (databaseManager.getConnection() != null) {
-			bt.onShutDownDataSave();
-			databaseManager.closeConnection();
-		}
+		bt.onShutDownDataSave();
+		databaseManager.closeConnection();
 		log.info(pluginName + " is disabled!");
 	}
 	
@@ -131,38 +132,36 @@ public class Main extends JavaPlugin {
 
 			if (args.length == 0) {
 				sender.sendMessage(ChatColor.RED + "Nothing to show.");
-			} else if (args[0].equalsIgnoreCase("test")) {
-				sender.sendMessage(ChatColor.GREEN + "Running test command.");
-
-				try {
-					File file = new File(this.getDataFolder(), "testdata.dat");
-
-					if (!file.exists()) {
-						sender.sendMessage(ChatColor.RED + "Test file doesn't exists.");
+			} else if (args[0].equalsIgnoreCase("migrate")) {
+				if (sender instanceof ConsoleCommandSender && sender.isOp()) {
+					if (args.length < 2) {
+						sender.sendMessage(ChatColor.RED + "Please append a valid unix time.");
 						return true;
 					}
 
-					net.minecraft.server.v1_16_R3.NBTTagCompound nbtTagCompound = NBTCompressedStreamTools.a(file);
-
-					if (nbtTagCompound.hasKey("Inventory")) {
-						// NBTTagList inventoryNBTBase = nbtTagCompound.getList("Inventory", 10);
-						Field f = nbtTagCompound.getClass().getField("map");
-						f.setAccessible(true);
-						Map<String, NBTBase> map = (Map<String, NBTBase>) f.get(nbtTagCompound);
-						NBTTagList inventoryNBTBase = (NBTTagList) map.get("Inventory");
-						System.out.println(inventoryNBTBase.getTypeId());
-						for (NBTBase nbtBase : inventoryNBTBase) {
-							System.out.println("type: " + nbtBase.getTypeId());
-							ItemStack itemStack = ItemStack.a((NBTTagCompound) nbtBase);
-							System.out.println(itemStack.toString());
-						}
+					if(!args[1].matches("[0-9]+")) {
+						sender.sendMessage(ChatColor.RED + "Invalid unix time.");
+						return false;
 					}
 
-				} catch (IOException | NoSuchFieldException | IllegalAccessException e) {
-					e.printStackTrace();
-					sender.sendMessage(ChatColor.RED + "Something went wrong :s");
-				}
+					sender.sendMessage(ChatColor.GREEN + "Starting migration.");
+					long now = System.currentTimeMillis();
+					long unixTime = Long.parseUnsignedLong(args[1]);
 
+					try {
+						DataMigrator.migrateServer(this, unixTime);
+					} catch (Exception ex) {
+						sender.sendMessage(ChatColor.RED + "Migration failed with message: " + ex.getLocalizedMessage());
+						ex.printStackTrace();
+					} finally {
+						sender.sendMessage(ChatColor.YELLOW + "Migration try in: " + ChatColor.AQUA
+								+ (System.currentTimeMillis() - now) + " milliseconds.");
+					}
+
+					sender.sendMessage(ChatColor.GREEN + "Migration finished.");
+				} else {
+					sender.sendMessage(ChatColor.RED + "haha no.");
+				}
 			}
 
 			return true;

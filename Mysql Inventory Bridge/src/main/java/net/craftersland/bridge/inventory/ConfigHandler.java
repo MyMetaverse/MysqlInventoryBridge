@@ -56,6 +56,14 @@ public class ConfigHandler {
 			return main.getConfig().getInt(key);
 		}
 	}
+
+	public Integer getInteger(String key, int def) {
+		if (!main.getConfig().contains(key)) {
+			return def;
+		} else {
+			return main.getConfig().getInt(key);
+		}
+	}
 	
 	public Boolean getBoolean(String key) {
 		if (!main.getConfig().contains(key)) {

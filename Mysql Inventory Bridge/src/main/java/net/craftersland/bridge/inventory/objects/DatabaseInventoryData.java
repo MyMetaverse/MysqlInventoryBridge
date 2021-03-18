@@ -2,10 +2,10 @@ package net.craftersland.bridge.inventory.objects;
 
 public class DatabaseInventoryData {
 	
-	private String rawInv;
-	private String rawAr;
-	private String syncComplete;
-	private String lastSee;
+	private final String rawInv;
+	private final String rawAr;
+	private final String syncComplete;
+	private final String lastSee;
 	
 	public DatabaseInventoryData(String rawInventory, String rawArmor, String syncStatus, String lastSeen) {
 		this.rawInv = rawInventory;

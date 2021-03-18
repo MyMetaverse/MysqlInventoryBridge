@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 
 public class DropItem implements Listener {
 	
-	private Main pd;
+	private final Main pd;
 	
 	public DropItem(Main pd) {
 		this.pd = pd;
@@ -16,7 +16,7 @@ public class DropItem implements Listener {
 	
 	@EventHandler
 	public void onItemDrop(final PlayerDropItemEvent event) {
-		if (pd.getInventoryDataHandler().isSyncComplete(event.getPlayer()) == false) {
+		if (!pd.getInventoryDataHandler().isSyncComplete(event.getPlayer())) {
 			event.setCancelled(true);
 		}
 	}

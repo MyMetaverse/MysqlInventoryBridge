@@ -1,15 +1,14 @@
 package net.craftersland.bridge.inventory.objects;
 
+import net.craftersland.bridge.inventory.Main;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.craftersland.bridge.inventory.Main;
-
 public class SyncCompleteTask extends BukkitRunnable {
 	
-	private Main pd;
-	private long startTime;
-	private Player p;
+	private final Main pd;
+	private final long startTime;
+	private final Player p;
 	private boolean inProgress = false;
 	
 	public SyncCompleteTask(Main pd, long start, Player player) {
@@ -20,12 +19,12 @@ public class SyncCompleteTask extends BukkitRunnable {
 
 	@Override
 	public void run() {
-		if (inProgress == false) {
+		if (!inProgress) {
 			if (p != null) {
-				if (p.isOnline() == true) {
+				if (p.isOnline()) {
 					inProgress = true;
-					if (pd.getInventoryDataHandler().isSyncComplete(p) == true) {
-						if (pd.getConfigHandler().getString("ChatMessages.syncComplete").matches("") == false) {
+					if (pd.getInventoryDataHandler().isSyncComplete(p)) {
+						if (!pd.getConfigHandler().getString("ChatMessages.syncComplete").matches("")) {
 							p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessages.syncComplete"));
 						}
 						pd.getSoundHandler().sendLevelUpSound(p);

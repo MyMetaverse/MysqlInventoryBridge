@@ -64,9 +64,9 @@ public class InventoryUtils {
 	            dataOutput.writeInt(items.length);
 	            
 	            // Save every element in the list
-	            for (int i = 0; i < items.length; i++) {
-	                dataOutput.writeObject(items[i]);
-	            }
+				for (ItemStack item : items) {
+					dataOutput.writeObject(item);
+				}
 	            
 	            // Serialize that array
 	            dataOutput.close();
@@ -98,35 +98,31 @@ public class InventoryUtils {
 	    StringBuilder stringBuilder = new StringBuilder();
 	    for (int i = 0; i < itemStacks.length; i++)
 	    {
-	      if (i > 0) {
+	      if (i > 0)
 	        stringBuilder.append(";");
-	      }
-	      if ((itemStacks[i] != null) && (itemStacks[i].getType() != Material.AIR)) {
-	        try
-	        {
+
+	      if (itemStacks[i] != null && itemStacks[i].getType() != Material.AIR) {
+
+	        try {
 	          stringBuilder.append(StreamSerializer.getDefault().serializeItemStack(itemStacks[i]));
-	        }
-	        catch (IOException e)
-	        {
+	        } catch (IOException e) {
 	          e.printStackTrace();
 	        }
 	      }
+
 	    }
-	    String string = stringBuilder.toString();
-	    return string;
+
+		return stringBuilder.toString();
 	  }
 	
 	public static ItemStack[] restoreModdedStacks(String string) {
 	    String[] strings = string.split(";");
 	    ItemStack[] itemStacks = new ItemStack[strings.length];
 	    for (int i = 0; i < strings.length; i++) {
-	      if (!strings[i].equals("")) {
-	        try
-	        {
+	      if (!strings[i].isEmpty()) {
+	        try {
 	          itemStacks[i] = StreamSerializer.getDefault().deserializeItemStack(strings[i]);
-	        }
-	        catch (IOException e)
-	        {
+	        } catch (IOException e) {
 	          e.printStackTrace();
 	        }
 	      }
