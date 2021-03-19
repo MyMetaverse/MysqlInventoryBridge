@@ -1,4 +1,4 @@
-package net.craftersland.bridge.inventory.migrator;
+package net.craftersland.bridge.inventory.encoder;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

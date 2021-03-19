@@ -4,7 +4,7 @@ apply plugin: 'java'
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-version = '1.0.0'
+version = '2.4.1-MME-1.0.0'
 
 repositories {
     mavenCentral()
@@ -18,6 +18,10 @@ repositories {
         name = 'dmulloy2-repo'
         url = 'https://repo.dmulloy2.net/repository/public/'
     }
+}
+
+processResources {
+    filter { String line -> line.replace("{version}" as CharSequence, version as CharSequence) }
 }
 
 dependencies {

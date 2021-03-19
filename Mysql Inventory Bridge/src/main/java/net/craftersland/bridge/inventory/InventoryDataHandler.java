@@ -1,12 +1,12 @@
 package net.craftersland.bridge.inventory;
 
-import net.craftersland.bridge.inventory.migrator.EncodeResult;
+import net.craftersland.bridge.inventory.encoder.*;
 import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,7 +16,7 @@ import java.util.UUID;
 public class InventoryDataHandler {
 
     private final Main pd;
-    private final Set<Player> playersInSync = new HashSet<>();
+    private final Set<UUID> playersInSync = new HashSet<>();
     private final Set<Player> playersDisconnectSave = new HashSet<>();
 
     private final HashMap<UUID, DatabaseInventoryData> waitingToLoad = new HashMap<>();
@@ -26,16 +26,16 @@ public class InventoryDataHandler {
     }
 
     public boolean isSyncComplete(Player p) {
-        return playersInSync.contains(p);
+        return playersInSync.contains(p.getUniqueId());
     }
 
     private void dataCleanup(Player p) {
-        playersInSync.remove(p);
+        playersInSync.remove(p.getUniqueId());
         playersDisconnectSave.remove(p);
     }
 
     public void setPlayerData(final Player p, DatabaseInventoryData data, InventorySyncData syncData) {
-        if (!playersInSync.contains(p)) {
+        if (!playersInSync.contains(p.getUniqueId())) {
 
             setInventory(p, data, syncData);
             if (pd.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
@@ -62,7 +62,7 @@ public class InventoryDataHandler {
         if (datacleanup)
             playersDisconnectSave.add(p);
 
-        boolean isPlayerInSync = playersInSync.contains(p);
+        boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
         if (isPlayerInSync) {
             EncodeResult inv = null;
             EncodeResult armor = null;
@@ -102,27 +102,29 @@ public class InventoryDataHandler {
         }
     }
 
-    public void preLoadPlayer(UUID uniqueId) {
-        if (Main.isDisabling) return;
+    public boolean preLoadPlayer(UUID uniqueId) {
+        if (Main.isDisabling || pd.getInvMysqlInterface() == null) return false;
         if (pd.getInvMysqlInterface().hasAccount(uniqueId)) {
             // First let's load the player's data.
             DatabaseInventoryData data = pd.getInvMysqlInterface().getData(uniqueId);
             waitingToLoad.put(uniqueId, data);
+            return true;
         } else {
             // If not, just pass null value, we'll handle this later.
             waitingToLoad.put(uniqueId, null);
+            return true;
         }
     }
 
     public void onJoinFunction(Player player) {
         if (Main.isDisabling) return;
 
-        if (!playersInSync.contains(player)) {
+        if (!playersInSync.contains(player.getUniqueId())) {
             if (waitingToLoad.containsKey(player.getUniqueId())) {
                 DatabaseInventoryData data = waitingToLoad.remove(player.getUniqueId());
                 if (data == null) {
                     // The player wasn't saved, proceed saving the player without sync.
-                    playersInSync.add(player);
+                    playersInSync.add(player.getUniqueId());
                     onDataSaveFunction(player, false, null, null);
                 } else {
                     // The player was saved.
@@ -140,8 +142,22 @@ public class InventoryDataHandler {
                     // We update the player inventory.
                     // If anything goes wrong, will place again the old player items.
                     setPlayerData(player, data, syncData);
+                    playersInSync.add(player.getUniqueId());
                 }
             } else {
+                if (pd.getInvMysqlInterface() == null) {
+                    playersDisconnectSave.remove(player); // We don't want to save the player bugged inventory.
+                    // If not, we leave the loop and kick the player.
+
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            player.kickPlayer("Failed while trying to load your data, try again.");
+                        }
+                    }.runTask(pd);
+
+                    pd.getLogger().warning(player.getUniqueId() + " wasn't able to load into the server.");
+                } else
                 pd.getInvMysqlInterface().getData(player.getUniqueId(), data -> {
                     if (data != null) {
                         // If we get the data, replace the old null value with the actual data.
@@ -152,7 +168,14 @@ public class InventoryDataHandler {
                     } else {
                         playersDisconnectSave.remove(player); // We don't want to save the player bugged inventory.
                         // If not, we leave the loop and kick the player.
-                        player.kickPlayer("Failed while trying to load your data, try again.");
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                player.kickPlayer("Failed while trying to load your data, try again.");
+                            }
+                        }.runTask(pd);
+
+                        pd.getLogger().warning(player.getUniqueId() + " wasn't able to load into the server.");
                     }
                 });
             }
@@ -232,37 +255,32 @@ public class InventoryDataHandler {
 
     public EncodeResult encodeItems(ItemStack[] items) {
         if (pd.useProtocolLib && pd.getConfigHandler().getBoolean("General.enableModdedItemsSupport")) {
-            return new EncodeResult(InventoryUtils.saveModdedStacksData(items), "modded");
+            return new ModdedEncoder().encode(items);
         } else {
-            return new EncodeResult(InventoryUtils.itemStackArrayToBase64(items), "vanilla");
+            return new VanillaEncoder().encode(items);
         }
     }
 
     public ItemStack[] decodeItems(String data) throws Exception {
         if (pd.useProtocolLib && pd.getConfigHandler().getBoolean("General.enableModdedItemsSupport")) {
-            ItemStack[] it = InventoryUtils.restoreModdedStacks(data);
+            ItemStack[] it = new ModdedEncoder().decode(data);
             if (it == null) {
-                it = InventoryUtils.itemStackArrayFromBase64(data);
+                it = new VanillaEncoder().decode(data);
             }
             return it;
         } else {
-            return InventoryUtils.itemStackArrayFromBase64(data);
+            return new VanillaEncoder().decode(data);
         }
     }
 
     public ItemStack[] decodeItems(String data, String codec) throws Exception {
         // We first try to decode the items with the saved codec.
-        if (codec.equals("vanilla")) {
-            return InventoryUtils.itemStackArrayFromBase64(data);
-        } else if (codec.equals("modded")) {
-            ItemStack[] it = InventoryUtils.restoreModdedStacks(data);
-            if (it == null) {
-                it = InventoryUtils.itemStackArrayFromBase64(data);
-            }
-            return it;
-        } else { // If none option is found, we target to force the server decode type.
-            return decodeItems(data);
-        }
+        Encoder encoder = EncoderFactory.getEncoder(codec);
+        if (encoder != null) {
+            ItemStack[] result = encoder.decode(data);
+            // If anything goes wrong we can try to decide with vanilla decoder.
+            return result != null ? result : new VanillaEncoder().decode(data);
+        } else return decodeItems(data); // If no encoder found, we try to decode with the customized encoder.
 
     }
 

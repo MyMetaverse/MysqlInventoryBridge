@@ -1,7 +1,7 @@
 package net.craftersland.bridge.inventory.database;
 
 import net.craftersland.bridge.inventory.Main;
-import net.craftersland.bridge.inventory.migrator.EncodeResult;
+import net.craftersland.bridge.inventory.encoder.EncodeResult;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 
 import java.sql.PreparedStatement;
@@ -57,7 +57,7 @@ public class InvMysqlInterface {
                 preparedStatement.setString(1, uniqueId.toString());
                 preparedStatement.setString(2, "none");
                 preparedStatement.setString(3, "none");
-                preparedStatement.setString(5, String.valueOf(System.currentTimeMillis()));
+                preparedStatement.setLong(4, System.currentTimeMillis());
 
                 preparedStatement.executeUpdate();
                 return true;
@@ -88,7 +88,7 @@ public class InvMysqlInterface {
 
                     preparedUpdateStatement.setString(1, invString);
                     preparedUpdateStatement.setString(2, armorString);
-                    preparedUpdateStatement.setString(3, String.valueOf(System.currentTimeMillis()));
+                    preparedUpdateStatement.setLong(3, System.currentTimeMillis());
                     preparedUpdateStatement.setString(4, inventory != null ? inventory.getCodec() : armor != null ? armor.getCodec() : null);
                     preparedUpdateStatement.setString(5, uniqueId.toString());
 
@@ -123,8 +123,7 @@ public class InvMysqlInterface {
                             return new DatabaseInventoryData(
                                     result.getString("inventory"),
                                     result.getString("armor"),
-                                    result.getString("sync_complete"),
-                                    result.getString("last_seen"),
+                                    result.getLong("last_seen"),
                                     result.getString("encode"));
                         }
                     }
@@ -145,6 +144,9 @@ public class InvMysqlInterface {
             createAccount(uniqueId);
         }
 
+        if(main.getConnectionHandler() == null)
+            data.accept(null);
+
         main.getConnectionHandler().executeVoid(conn -> {
             if (conn != null) {
                 String sql = "SELECT * FROM `" + main.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
@@ -157,8 +159,7 @@ public class InvMysqlInterface {
                             DatabaseInventoryData did = new DatabaseInventoryData(
                                     result.getString("inventory"),
                                     result.getString("armor"),
-                                    result.getString("sync_complete"),
-                                    result.getString("last_seen"),
+                                    result.getLong("last_seen"),
                                     result.getString("encode")
                             );
                             data.accept(did);

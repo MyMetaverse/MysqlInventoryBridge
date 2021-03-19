@@ -27,7 +27,7 @@ public class MysqlSetup {
 						"player_uuid char(36) NOT NULL UNIQUE, " +
 						"inventory LONGTEXT NOT NULL, " +
 						"armor LONGTEXT NOT NULL, " +
-						"last_seen char(13) NOT NULL, " +
+						"last_seen BIGINT UNSIGNED NOT NULL, " +
 						"encode varchar(15) NULL, " +
 						"PRIMARY KEY(id));";
 

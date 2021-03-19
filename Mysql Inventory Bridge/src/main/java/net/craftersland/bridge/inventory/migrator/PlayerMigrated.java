@@ -59,12 +59,4 @@ public class PlayerMigrated {
         }
     }
 
-    public String getBase64Inventory() {
-        return InventoryUtils.itemStackArrayToBase64(inventory);
-    }
-
-    public String getBase64Armor() {
-        return InventoryUtils.itemStackArrayToBase64(armor);
-    }
-
 }

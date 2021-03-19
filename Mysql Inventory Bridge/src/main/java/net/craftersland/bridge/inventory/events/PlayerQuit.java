@@ -1,7 +1,6 @@
 package net.craftersland.bridge.inventory.events;
 
 import net.craftersland.bridge.inventory.Main;
-
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,6 +24,8 @@ public class PlayerQuit implements Listener {
 				ItemStack[] inventory = main.getInventoryDataHandler().getInventory(p);
 				ItemStack[] armor = main.getInventoryDataHandler().getArmor(p);
 				main.getInventoryDataHandler().onDataSaveFunction(p, true, inventory, armor);
+
+				main.getLogger().info(p.getUniqueId() + " inventory was saved into database.");
 			}, 2L);
 		}
 	}

@@ -4,7 +4,6 @@ import lombok.Getter;
 import net.craftersland.bridge.inventory.database.ConnectionHandler;
 import net.craftersland.bridge.inventory.database.InvMysqlInterface;
 import net.craftersland.bridge.inventory.database.MysqlSetup;
-import net.craftersland.bridge.inventory.events.DropItem;
 import net.craftersland.bridge.inventory.events.InventoryClick;
 import net.craftersland.bridge.inventory.events.PlayerJoin;
 import net.craftersland.bridge.inventory.events.PlayerQuit;
@@ -48,16 +47,29 @@ public class Main extends JavaPlugin {
     	configHandler = new ConfigHandler(this);
     	sH = new SoundHandler(this);
     	checkDependency();
-		connectionHandler = new ConnectionHandler(this);
+    	try {
+			connectionHandler = new ConnectionHandler(this);
+		} catch (Exception ex) {
+    		getLogger().severe("DATABASE NOT AVAILABLE FOR INVENTORIES. STOPPING SERVER. ");
+			Bukkit.getServer().shutdown();
+		}
+
     	bt = new BackgroundTask(this);
-    	databaseManager = new MysqlSetup(this);
-    	invMysqlInterface = new InvMysqlInterface(this);
-    	idH = new InventoryDataHandler(this);
+
+    	try {
+			databaseManager = new MysqlSetup(this);
+			invMysqlInterface = new InvMysqlInterface(this);
+		} catch (Exception ex) {
+    		ex.printStackTrace();
+			getLogger().severe("DATABASE NOT NOT GENERATED. STOPPING SERVER. ");
+			Bukkit.getServer().shutdown();
+		}
+
+		idH = new InventoryDataHandler(this);
     	//Register Listeners
     	PluginManager pm = getServer().getPluginManager();
     	pm.registerEvents(new PlayerJoin(this), this);
     	pm.registerEvents(new PlayerQuit(this), this);
-    	pm.registerEvents(new DropItem(this), this);
     	pm.registerEvents(new InventoryClick(this), this);
     	log.info(pluginName + " loaded successfully!");
 	}
