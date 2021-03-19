@@ -1,33 +1,16 @@
 package net.craftersland.bridge.inventory.objects;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public class DatabaseInventoryData {
 	
-	private final String rawInv;
-	private final String rawAr;
+	private final String rawInventory;
+	private final String rawArmor;
 	private final String syncComplete;
-	private final String lastSee;
-	
-	public DatabaseInventoryData(String rawInventory, String rawArmor, String syncStatus, String lastSeen) {
-		this.rawInv = rawInventory;
-		this.rawAr = rawArmor;
-		this.syncComplete = syncStatus;
-		this.lastSee = lastSeen;
-	}
-	
-	public String getLastSeen() {
-		return lastSee;
-	}
-	
-	public String getSyncStatus() {
-		return syncComplete;
-	}
-	
-	public String getRawArmor() {
-		return rawAr;
-	}
-	
-	public String getRawInventory() {
-		return rawInv;
-	}
+	private final String lastSeen;
+	private final String encode;
 
 }

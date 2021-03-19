@@ -22,7 +22,15 @@ public class MysqlSetup {
 	public void setupDatabase() {
 	    eco.getConnectionHandler().executeVoid(connection -> {
 			if (connection != null) {
-				String data = "CREATE TABLE IF NOT EXISTS `" + eco.getConfigHandler().getString("database.mysql.tableName") + "` (id int(10) AUTO_INCREMENT, player_uuid char(36) NOT NULL UNIQUE, inventory LONGTEXT NOT NULL, armor LONGTEXT NOT NULL, sync_complete varchar(5) NOT NULL, last_seen char(13) NOT NULL, PRIMARY KEY(id));";
+				String data = "CREATE TABLE IF NOT EXISTS `" + eco.getConfigHandler().getString("database.mysql.tableName") + "` " +
+						"(id int(10) AUTO_INCREMENT, " +
+						"player_uuid char(36) NOT NULL UNIQUE, " +
+						"inventory LONGTEXT NOT NULL, " +
+						"armor LONGTEXT NOT NULL, " +
+						"last_seen char(13) NOT NULL, " +
+						"encode varchar(15) NULL, " +
+						"PRIMARY KEY(id));";
+
 				try (PreparedStatement query = connection.prepareStatement(data)) {
 					query.execute();
 				} catch (SQLException e) {
@@ -67,12 +75,7 @@ public class MysqlSetup {
 							query2.execute();
 						}
 					}
-					rs3 = md.getColumns(null, null, eco.getConfigHandler().getString("database.mysql.tableName"), "sync_complete");
-					if (!rs3.next()) {
-						String data = "ALTER TABLE `" + eco.getConfigHandler().getString("database.mysql.tableName") + "` ADD sync_complete varchar(5) NOT NULL DEFAULT 'true';";
-						query3 = conn.prepareStatement(data);
-						query3.execute();
-					}
+
 				} catch (Exception e) {
 					Main.log.severe("Error updating table! Error: " + e.getMessage());
 				} finally {

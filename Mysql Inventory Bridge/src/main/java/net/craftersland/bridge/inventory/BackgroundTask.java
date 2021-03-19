@@ -35,7 +35,7 @@ public class BackgroundTask {
 				}
 				for (Player p : onlinePlayers) {
 					if (p.isOnline()) {
-						m.getInventoryDataHandler().onDataSaveFunction(p, false, "false", null, null);
+						m.getInventoryDataHandler().onDataSaveFunction(p, false,  null, null);
 					}
 				}
 				if (!m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages")) {
@@ -52,7 +52,7 @@ public class BackgroundTask {
 		
 		for (Player p : onlinePlayers) {
 			if (p.isOnline()) {
-				m.getInventoryDataHandler().onDataSaveFunction(p, false, "true", null, null);
+				m.getInventoryDataHandler().onDataSaveFunction(p, false, null, null);
 			}
 		}
 		Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");

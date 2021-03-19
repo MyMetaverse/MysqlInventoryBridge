@@ -1,13 +1,14 @@
 package net.craftersland.bridge.inventory.database;
 
 import net.craftersland.bridge.inventory.Main;
+import net.craftersland.bridge.inventory.migrator.EncodeResult;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
-import org.bukkit.entity.Player;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class InvMysqlInterface {
 
@@ -50,13 +51,12 @@ public class InvMysqlInterface {
             if(conn == null)
                 return false;
 
-            String sql = "INSERT INTO `" + main.getConfigHandler().getString("database.mysql.tableName") + "`(`player_uuid`, `inventory`, `armor`, `sync_complete`, `last_seen`) " + "VALUES(?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO `" + main.getConfigHandler().getString("database.mysql.tableName") + "`(`player_uuid`, `inventory`, `armor`, `last_seen`) " + "VALUES(?, ?, ?, ?)";
 
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
                 preparedStatement.setString(1, uniqueId.toString());
                 preparedStatement.setString(2, "none");
                 preparedStatement.setString(3, "none");
-                preparedStatement.setString(4, "true");
                 preparedStatement.setString(5, String.valueOf(System.currentTimeMillis()));
 
                 preparedStatement.executeUpdate();
@@ -68,20 +68,28 @@ public class InvMysqlInterface {
         });
     }
 
-    public boolean setData(UUID uniqueId, String inventory, String armor, String syncComplete) {
+    public boolean setData(UUID uniqueId, EncodeResult inventory, EncodeResult armor) {
         if (!hasAccount(uniqueId)) {
             createAccount(uniqueId);
         }
 
         main.getConnectionHandler().execute(conn -> {
             if (conn != null) {
-                String data = "UPDATE `" + main.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `inventory` = ?" + ", `armor` = ?" + ", `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
+                String data = "UPDATE `" + main.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `inventory` = ?" +
+                        ", `armor` = ?"
+                        + ", `last_seen` = ?"
+                        + ", `encode` = ?"
+                        + " WHERE `player_uuid` = ?";
+
                 try (PreparedStatement preparedUpdateStatement = conn.prepareStatement(data)) {
 
-                    preparedUpdateStatement.setString(1, inventory);
-                    preparedUpdateStatement.setString(2, armor);
-                    preparedUpdateStatement.setString(3, syncComplete);
-                    preparedUpdateStatement.setString(4, String.valueOf(System.currentTimeMillis()));
+                    String invString = inventory != null ? inventory.getResult() : "none";
+                    String armorString = armor != null ? armor.getResult() : "none";
+
+                    preparedUpdateStatement.setString(1, invString);
+                    preparedUpdateStatement.setString(2, armorString);
+                    preparedUpdateStatement.setString(3, String.valueOf(System.currentTimeMillis()));
+                    preparedUpdateStatement.setString(4, inventory != null ? inventory.getCodec() : armor != null ? armor.getCodec() : null);
                     preparedUpdateStatement.setString(5, uniqueId.toString());
 
                     preparedUpdateStatement.executeUpdate();
@@ -98,30 +106,6 @@ public class InvMysqlInterface {
         return false;
     }
 
-    public boolean setSyncStatus(Player player, String syncStatus) {
-
-        return main.getConnectionHandler().execute(conn -> {
-            if (conn != null) {
-                String data = "UPDATE `" + main.getConfigHandler().getString("database.mysql.tableName") + "` " + "SET `sync_complete` = ?" + ", `last_seen` = ?" + " WHERE `player_uuid` = ?";
-                try (PreparedStatement preparedUpdateStatement = conn.prepareStatement(data)) {
-
-                    preparedUpdateStatement.setString(1, syncStatus);
-                    preparedUpdateStatement.setString(2, String.valueOf(System.currentTimeMillis()));
-                    preparedUpdateStatement.setString(3, player.getUniqueId().toString());
-
-                    preparedUpdateStatement.executeUpdate();
-                    return true;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-
-            return false;
-        });
-
-    }
-
     public DatabaseInventoryData getData(UUID uniqueId) {
         if (!hasAccount(uniqueId)) {
             createAccount(uniqueId);
@@ -136,7 +120,12 @@ public class InvMysqlInterface {
 
                     try (ResultSet result = preparedUpdateStatement.executeQuery()) {
                         if (result.next()) {
-                            return new DatabaseInventoryData(result.getString("inventory"), result.getString("armor"), result.getString("sync_complete"), result.getString("last_seen"));
+                            return new DatabaseInventoryData(
+                                    result.getString("inventory"),
+                                    result.getString("armor"),
+                                    result.getString("sync_complete"),
+                                    result.getString("last_seen"),
+                                    result.getString("encode"));
                         }
                     }
 
@@ -147,6 +136,41 @@ public class InvMysqlInterface {
             }
 
             return null;
+        });
+    }
+
+
+    public void getData(UUID uniqueId, Consumer<DatabaseInventoryData> data) {
+        if (!hasAccount(uniqueId)) {
+            createAccount(uniqueId);
+        }
+
+        main.getConnectionHandler().executeVoid(conn -> {
+            if (conn != null) {
+                String sql = "SELECT * FROM `" + main.getConfigHandler().getString("database.mysql.tableName") + "` WHERE `player_uuid` = ? LIMIT 1";
+                try (PreparedStatement preparedUpdateStatement = conn.prepareStatement(sql)){
+
+                    preparedUpdateStatement.setString(1, uniqueId.toString());
+
+                    try (ResultSet result = preparedUpdateStatement.executeQuery()) {
+                        if (result.next()) {
+                            DatabaseInventoryData did = new DatabaseInventoryData(
+                                    result.getString("inventory"),
+                                    result.getString("armor"),
+                                    result.getString("sync_complete"),
+                                    result.getString("last_seen"),
+                                    result.getString("encode")
+                            );
+                            data.accept(did);
+                        }
+                    }
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    data.accept(null);
+                }
+            }
+            data.accept(null);
         });
     }
 

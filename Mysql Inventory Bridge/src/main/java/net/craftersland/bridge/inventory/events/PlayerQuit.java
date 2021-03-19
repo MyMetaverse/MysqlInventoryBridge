@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class PlayerQuit implements Listener {
 	
-	private Main main;
+	private final Main main;
 	
 	public PlayerQuit(Main main) {
 		this.main = main;
@@ -24,7 +24,7 @@ public class PlayerQuit implements Listener {
 			Bukkit.getScheduler().runTaskLaterAsynchronously(main, () -> {
 				ItemStack[] inventory = main.getInventoryDataHandler().getInventory(p);
 				ItemStack[] armor = main.getInventoryDataHandler().getArmor(p);
-				main.getInventoryDataHandler().onDataSaveFunction(p, true, "true", inventory, armor);
+				main.getInventoryDataHandler().onDataSaveFunction(p, true, inventory, armor);
 			}, 2L);
 		}
 	}
