@@ -49,7 +49,7 @@ public class PlayerJoin implements Listener {
             main.getLogger().info(uniqueId + " loaded from Redis.");
         } else if (bridgeResult.getResult() == BridgeResult.Result.NOT_SAVED) { // If the player is not loaded...
             boolean result = main.getInventoryDataHandler().preLoadPlayer(uniqueId); // We attempt to load it from SQL.
-            if (!result)
+            if (!result) // If we fail to load, we kick the player.
                 e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Failed loading your data, join again.");
             main.getLogger().info(uniqueId + " loaded from SQL.");
         }
@@ -62,8 +62,8 @@ public class PlayerJoin implements Listener {
             // After that we save the player into our database.
 
             if (player.isOnline()) {
-                boolean isSync = main.getInventoryDataHandler().onJoinFunction(player);
-                if (isSync)
+                boolean isSync = main.getInventoryDataHandler().onJoinFunction(player); // We try to sync the player wit cache.
+                if (isSync) // If achieved, send message.
                     new SyncCompleteTask(main, player).runTaskAsynchronously(main);
             }
 

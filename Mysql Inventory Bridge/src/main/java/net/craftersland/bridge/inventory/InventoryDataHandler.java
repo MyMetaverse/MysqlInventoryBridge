@@ -7,12 +7,11 @@ import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class InventoryDataHandler {
 
@@ -50,6 +49,69 @@ public class InventoryDataHandler {
                 encodeItems(playerMigrated.getArmor()));
     }
 
+    public EncodeResult[] convertData(Player p, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
+        EncodeResult inv = null;
+        EncodeResult armor = null;
+        if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
+            Main.log.info("Inventory Debug - Save Data - Start - " + p.getName());
+        }
+        try {
+            if (inventoryDisconnect != null) {
+                if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
+                    Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
+                inv = encodeItems(inventoryDisconnect);
+            } else {
+                if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
+                    Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
+                inv = encodeItems(p.getInventory().getContents());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
+            try {
+
+                if (inventoryDisconnect != null)
+                    armor = encodeItems(armorDisconnect);
+                else
+                    armor = encodeItems(p.getInventory().getArmorContents());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return new EncodeResult[]{inv, armor};
+    }
+
+
+    public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
+        Flux.fromIterable(players)
+                .filter(player -> !playersDisconnectSave.contains(player))
+                .map(p -> {
+                    ItemStack[] inventoryDisconnect = p.getInventory().getContents();
+                    ItemStack[] armorDisconnect = p.getInventory().getArmorContents();
+
+                    if (datacleanup)
+                        playersDisconnectSave.add(p);
+
+                    boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
+                    if (isPlayerInSync) {
+                        EncodeResult[] results = convertData(p, inventoryDisconnect, armorDisconnect);
+                        if (results != null)
+                            return new Object[]{p.getUniqueId(), results[0], results[1]};
+                    }
+                    if (datacleanup) {
+                        dataCleanup(p);
+                    }
+                    return new Object[0];
+                })
+                .filter(objects -> objects.length > 0)
+                .collect(Collectors.toList())
+                .subscribe(main.getInvMysqlInterface()::setData);
+
+    }
+
     public void onDataSaveFunction(Player p, Boolean datacleanup, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
         if (playersDisconnectSave.contains(p)) {
             if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
@@ -63,57 +125,31 @@ public class InventoryDataHandler {
 
         boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
         if (isPlayerInSync) {
-            EncodeResult inv = null;
-            EncodeResult armor = null;
-            if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-                Main.log.info("Inventory Debug - Save Data - Start - " + p.getName());
-            }
-            try {
-                if (inventoryDisconnect != null) {
-                    if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
-                        Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
-                    inv = encodeItems(inventoryDisconnect);
-                } else {
-                    if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
-                        Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
-                    inv = encodeItems(p.getInventory().getContents());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
-                try {
-
-                    if (inventoryDisconnect != null)
-                        armor = encodeItems(armorDisconnect);
-                    else
-                        armor = encodeItems(p.getInventory().getArmorContents());
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-
-            main.getInvMysqlInterface().setData(p.getUniqueId(), inv, armor);
+            EncodeResult[] results = convertData(p, inventoryDisconnect, armorDisconnect);
+            if(results != null)
+                main.getInvMysqlInterface().setData(p.getUniqueId(), results[0], results[1]);
         }
         if (datacleanup) {
             dataCleanup(p);
         }
     }
 
+
     public boolean preLoadPlayer(UUID uniqueId) {
         if (Main.isDisabling || main.getInvMysqlInterface() == null) return false;
 
-        if (main.getInvMysqlInterface().hasAccount(uniqueId)) {
-            // First let's load the player's data.
-            DatabaseInventoryData data = main.getInvMysqlInterface().getData(uniqueId);
-            waitingToLoad.put(uniqueId, data);
+        return main.getConnectionHandler().execute(connection -> {
+            if (main.getInvMysqlInterface().hasAccount(connection, uniqueId)) {
+                // First let's load the player's data.
+                DatabaseInventoryData data = main.getInvMysqlInterface().getData(uniqueId);
+                waitingToLoad.put(uniqueId, data);
+            } else {
+                // If not, just pass null value, we'll handle this later.
+                waitingToLoad.put(uniqueId, null);
+            }
             return true;
-        } else {
-            // If not, just pass null value, we'll handle this later.
-            waitingToLoad.put(uniqueId, null);
-            return true;
-        }
+        });
+
     }
 
     public void assignPlayer(UUID uniqueId, BridgeResult bridgeResult) {

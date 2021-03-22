@@ -18,7 +18,7 @@ public class SyncCompleteTask extends BukkitRunnable {
     public void run() {
         if (pd.getInventoryDataHandler().isSyncComplete(p)) {
 
-            if (!pd.getConfigHandler().getString("ChatMessages.syncComplete").matches("")) {
+            if (!pd.getConfigHandler().getString("ChatMessages.syncComplete").isEmpty()) {
                 p.sendMessage(pd.getConfigHandler().getStringWithColor("ChatMessages.syncComplete"));
             }
 

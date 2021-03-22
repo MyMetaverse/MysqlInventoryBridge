@@ -28,7 +28,7 @@ public class PlayerQuit implements Listener {
 				main.getBridge().cachePlayer(p.getUniqueId(),
 						main.getInventoryDataHandler().encodeItems(inventory), // We encode data according to our configuration.
 						main.getInventoryDataHandler().encodeItems(armor),
-						true
+						true, p
 				);
 
 				main.getInventoryDataHandler().onDataSaveFunction(p, true, inventory, armor);

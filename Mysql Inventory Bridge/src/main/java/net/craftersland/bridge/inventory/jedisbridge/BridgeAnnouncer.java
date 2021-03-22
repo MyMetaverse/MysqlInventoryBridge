@@ -30,6 +30,10 @@ public class BridgeAnnouncer extends BinaryJedisPubSub {
                     if (player != null && player.isOnline()) {
                         main.getInventoryDataHandler().onJoinFunction(player, true);
 
+                        int heldSlot = bridgeTransporter.getHeldSlot();
+                        if (heldSlot > -1)
+                            player.getInventory().setHeldItemSlot(heldSlot);
+
                         PlayerJoin.queue.computeIfPresent(bridgeTransporter.getUniqueId(), (uuid, bridgeMonitor) -> {
                             bridgeMonitor.recall();
                             main.getBridge().loadedFromMessage.add(uuid);

@@ -33,14 +33,13 @@ public class BackgroundTask {
 				if (!m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages")) {
 					Main.log.info("Saving online players data...");
 				}
-				for (Player p : onlinePlayers) {
-					if (p.isOnline()) {
-						m.getInventoryDataHandler().onDataSaveFunction(p, false,  null, null);
-					}
-				}
+
+				m.getInventoryDataHandler().saveMultiplePlayers(onlinePlayers, false);
+
 				if (!m.getConfigHandler().getBoolean("General.saveDataTask.hideLogMessages")) {
 					Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");
 				}
+
 				onlinePlayers.clear();
 			}
 		}
@@ -49,12 +48,9 @@ public class BackgroundTask {
 	public void onShutDownDataSave() {
 		Main.log.info("Saving online players data...");
 		List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
-		
-		for (Player p : onlinePlayers) {
-			if (p.isOnline()) {
-				m.getInventoryDataHandler().onDataSaveFunction(p, false, null, null);
-			}
-		}
+
+		m.getInventoryDataHandler().saveMultiplePlayers(onlinePlayers, false);
+
 		Main.log.info("Data save complete for " + onlinePlayers.size() + " players.");
 	}
 

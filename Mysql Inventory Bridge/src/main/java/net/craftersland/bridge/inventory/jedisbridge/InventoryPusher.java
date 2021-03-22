@@ -6,8 +6,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import reactor.core.publisher.Mono;
 
-import java.util.UUID;
-
 public class InventoryPusher {
 
     private final Main main;
@@ -22,17 +20,18 @@ public class InventoryPusher {
                     ItemStack[] inventory = main.getInventoryDataHandler().getInventory(player);
                     ItemStack[] armor = main.getInventoryDataHandler().getArmor(player);
                     return new Object[] {
-                            player.getUniqueId(),
+                            player,
                             main.getInventoryDataHandler().encodeItems(inventory),
                             main.getInventoryDataHandler().encodeItems(armor)
                     };
                 })
                 .doOnNext(res ->
                     main.getBridge().cachePlayer(
-                            (UUID) res[0],
+                            ((Player) res[0]).getUniqueId(),
                             (EncodeResult) res[1], // We encode data according to our configuration.
                             (EncodeResult) res[2],
-                            false
+                            false,
+                            (Player) res[0]
                     )
                 )
                 .subscribe();

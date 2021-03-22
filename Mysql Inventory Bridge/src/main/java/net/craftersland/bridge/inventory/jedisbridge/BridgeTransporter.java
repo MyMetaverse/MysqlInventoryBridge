@@ -17,6 +17,8 @@ public class BridgeTransporter implements Serializable {
 
     private final String codec;
 
+    private final int heldSlot;
+
 
 
 }

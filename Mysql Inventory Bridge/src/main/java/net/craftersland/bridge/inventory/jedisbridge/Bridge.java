@@ -2,6 +2,7 @@ package net.craftersland.bridge.inventory.jedisbridge;
 
 import net.craftersland.bridge.inventory.Main;
 import net.craftersland.bridge.inventory.encoder.EncodeResult;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.params.SetParams;
@@ -69,7 +70,7 @@ public class Bridge {
      * @param inventory The inventory encoded.
      * @param armor The armor encoded.
      */
-    public void cachePlayer(UUID uniqueId, EncodeResult inventory, EncodeResult armor, boolean announce) {
+    public void cachePlayer(UUID uniqueId, EncodeResult inventory, EncodeResult armor, boolean announce, Player player) {
         jedis.set("mibPlayer:codec:" + uniqueId.toString(), inventory.getCodec(), TIMEOUT);
         jedis.set("mibPlayer:inventory:" + uniqueId.toString(), inventory.getResult(), TIMEOUT);
         jedis.set("mibPlayer:armor:" + uniqueId.toString(), armor.getResult(), TIMEOUT);
@@ -83,7 +84,8 @@ public class Bridge {
                             uniqueId,
                             inventory.getResult(),
                             armor.getResult(),
-                            inventory.getCodec()
+                            inventory.getCodec(),
+                            player != null ? player.getInventory().getHeldItemSlot() : -1
                             ));
                     outputStream.flush();
                     jedis.publish("mib".getBytes(StandardCharsets.UTF_8), byteArrayOutputStream.toByteArray());

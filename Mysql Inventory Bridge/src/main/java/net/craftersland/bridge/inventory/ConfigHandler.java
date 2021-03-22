@@ -1,6 +1,9 @@
 package net.craftersland.bridge.inventory;
 
+import org.bukkit.ChatColor;
+
 import java.io.File;
+import java.util.Objects;
 
 public class ConfigHandler {
 	
@@ -44,7 +47,7 @@ public class ConfigHandler {
 			main.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + Main.pluginName + " folder! (Try generating a new one by deleting the current)");
 			return "errorCouldNotLocateInConfigYml:" + key;
 		} else {
-			return main.getConfig().getString(key).replaceAll("&", "�");
+			return ChatColor.translateAlternateColorCodes('&', Objects.requireNonNull(main.getConfig().getString(key)));
 		}
 	}
 	
