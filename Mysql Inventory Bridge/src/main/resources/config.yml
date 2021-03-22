@@ -26,7 +26,9 @@ database:
         enabled: false
         #Inactivity in days. Default 60 days.
         inactivity: 60
-        
+
+redis:
+    host: "localhost"
         
 #Other configurable options
 General:

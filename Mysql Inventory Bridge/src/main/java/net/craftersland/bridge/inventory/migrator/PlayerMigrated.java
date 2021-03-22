@@ -2,7 +2,6 @@ package net.craftersland.bridge.inventory.migrator;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
-import net.craftersland.bridge.inventory.InventoryUtils;
 import net.minecraft.server.v1_16_R3.*;
 import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
 

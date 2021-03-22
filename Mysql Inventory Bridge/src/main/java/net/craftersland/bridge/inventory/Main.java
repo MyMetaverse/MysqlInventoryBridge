@@ -7,6 +7,8 @@ import net.craftersland.bridge.inventory.database.MysqlSetup;
 import net.craftersland.bridge.inventory.events.InventoryClick;
 import net.craftersland.bridge.inventory.events.PlayerJoin;
 import net.craftersland.bridge.inventory.events.PlayerQuit;
+import net.craftersland.bridge.inventory.jedisbridge.Bridge;
+import net.craftersland.bridge.inventory.jedisbridge.InventoryPusher;
 import net.craftersland.bridge.inventory.migrator.DataMigrator;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -39,9 +41,17 @@ public class Main extends JavaPlugin {
 
 	@Getter
 	private ConnectionHandler connectionHandler;
-	
+
+	@Getter
+	private Bridge bridge;
+
+	@Getter
+	private InventoryPusher inventoryPusher;
+
 	@Override
     public void onEnable() {
+		inventoryPusher = new InventoryPusher(this);
+
 		log = getLogger();
 		getMcVersion();
     	configHandler = new ConfigHandler(this);
@@ -50,8 +60,9 @@ public class Main extends JavaPlugin {
     	try {
 			connectionHandler = new ConnectionHandler(this);
 		} catch (Exception ex) {
-    		getLogger().severe("DATABASE NOT AVAILABLE FOR INVENTORIES. STOPPING SERVER. ");
-			Bukkit.getServer().shutdown();
+    		ex.printStackTrace();
+    		getLogger().severe("DATABASE NOT AVAILABLE FOR INVENTORIES. ");
+			//Bukkit.getServer().shutdown();
 		}
 
     	bt = new BackgroundTask(this);
@@ -61,8 +72,8 @@ public class Main extends JavaPlugin {
 			invMysqlInterface = new InvMysqlInterface(this);
 		} catch (Exception ex) {
     		ex.printStackTrace();
-			getLogger().severe("DATABASE NOT NOT GENERATED. STOPPING SERVER. ");
-			Bukkit.getServer().shutdown();
+			getLogger().severe("DATABASE NOT NOT GENERATED. ");
+			//Bukkit.getServer().shutdown();
 		}
 
 		idH = new InventoryDataHandler(this);
@@ -71,6 +82,10 @@ public class Main extends JavaPlugin {
     	pm.registerEvents(new PlayerJoin(this), this);
     	pm.registerEvents(new PlayerQuit(this), this);
     	pm.registerEvents(new InventoryClick(this), this);
+
+    	// Loading Redis inventory bridge.
+		this.bridge = new Bridge(this);
+
     	log.info(pluginName + " loaded successfully!");
 	}
 	

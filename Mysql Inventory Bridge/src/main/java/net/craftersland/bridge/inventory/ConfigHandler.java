@@ -64,7 +64,15 @@ public class ConfigHandler {
 			return main.getConfig().getInt(key);
 		}
 	}
-	
+
+	public String getString(String key, String def) {
+		if (!main.getConfig().contains(key)) {
+			return def;
+		} else {
+			return main.getConfig().getString(key);
+		}
+	}
+
 	public Boolean getBoolean(String key) {
 		if (!main.getConfig().contains(key)) {
 			main.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + Main.pluginName + " folder! (Try generating a new one by deleting the current)");

@@ -3,6 +3,8 @@ package net.craftersland.bridge.inventory.encoder;
 public class EncoderFactory {
 
     public static Encoder getEncoder(String type) {
+        if(type == null)
+            return null;
 
         if (type.equals("vanilla")) {
             return new VanillaEncoder();

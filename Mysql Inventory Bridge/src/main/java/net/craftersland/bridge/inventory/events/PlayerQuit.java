@@ -20,13 +20,20 @@ public class PlayerQuit implements Listener {
 	public void onDisconnect(final PlayerQuitEvent event) {
 		if (!Main.isDisabling) {
 			final Player p = event.getPlayer();
-			Bukkit.getScheduler().runTaskLaterAsynchronously(main, () -> {
+			Bukkit.getScheduler().runTaskAsynchronously(main, () -> {
 				ItemStack[] inventory = main.getInventoryDataHandler().getInventory(p);
 				ItemStack[] armor = main.getInventoryDataHandler().getArmor(p);
-				main.getInventoryDataHandler().onDataSaveFunction(p, true, inventory, armor);
 
+				// First we need to save the player into redis.
+				main.getBridge().cachePlayer(p.getUniqueId(),
+						main.getInventoryDataHandler().encodeItems(inventory), // We encode data according to our configuration.
+						main.getInventoryDataHandler().encodeItems(armor),
+						true
+				);
+
+				main.getInventoryDataHandler().onDataSaveFunction(p, true, inventory, armor);
 				main.getLogger().info(p.getUniqueId() + " inventory was saved into database.");
-			}, 2L);
+			});
 		}
 	}
 
