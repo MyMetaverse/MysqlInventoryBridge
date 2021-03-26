@@ -96,6 +96,7 @@ public class Main extends JavaPlugin {
 		HandlerList.unregisterAll(this);
 		bt.onShutDownDataSave();
 		databaseManager.closeConnection();
+		bridge.closeRedis();
 		log.info(pluginName + " is disabled!");
 	}
 	

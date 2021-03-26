@@ -5,6 +5,8 @@ import net.craftersland.bridge.inventory.encoder.EncodeResult;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.params.SetParams;
 
 import java.io.ByteArrayOutputStream;
@@ -19,14 +21,16 @@ public class Bridge {
 
     private static final SetParams TIMEOUT = new SetParams().ex(500); // We set the cache to 800 seconds.
 
-    private final Jedis jedis;
-    private final Jedis announcer;
+    private final Main main;
+
+    private Jedis jedis;
+    private Jedis announcer;
 
     public final Set<UUID> loadedFromMessage = new HashSet<>();
 
     public Bridge(Main main) {
-        this.jedis = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
-        announcer = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
+        this.main = main;
+        connect();
 
         MinecraftRedisListener minecraftRedisListener = new MinecraftRedisListener(main.getInventoryPusher());
 
@@ -42,12 +46,33 @@ public class Bridge {
         }.runTaskAsynchronously(main);
     }
 
+    public void connect() {
+        this.jedis = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
+        announcer = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
+    }
+
+    public void checkConnectionStatus() {
+        try {
+            this.jedis.ping();
+        } catch (JedisException ex) {
+            this.jedis.close();
+            this.jedis = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
+        }
+    }
+
+    public void closeRedis() {
+        jedis.close();
+        announcer.close();
+    }
+
     /**
      * We attempt to read the player from memory (if is registered)
      * @param uniqueId The player
      * @return The result of the read.
      */
     public BridgeResult readPlayer(UUID uniqueId) {
+        checkConnectionStatus();
+
         if(loadedFromMessage.remove(uniqueId))
             return new BridgeResult(BridgeResult.Result.DONE);
 
@@ -71,6 +96,8 @@ public class Bridge {
      * @param armor The armor encoded.
      */
     public void cachePlayer(UUID uniqueId, EncodeResult inventory, EncodeResult armor, boolean announce, Player player) {
+        checkConnectionStatus();
+
         jedis.set("mibPlayer:codec:" + uniqueId.toString(), inventory.getCodec(), TIMEOUT);
         jedis.set("mibPlayer:inventory:" + uniqueId.toString(), inventory.getResult(), TIMEOUT);
         jedis.set("mibPlayer:armor:" + uniqueId.toString(), armor.getResult(), TIMEOUT);
@@ -102,6 +129,8 @@ public class Bridge {
      * @param uniqueId The player to be register.
      */
     public void registerPlayer(UUID uniqueId) {
+        checkConnectionStatus();
+
         jedis.set("mibPlayer:" + uniqueId.toString(), "y", TIMEOUT);
     }
 

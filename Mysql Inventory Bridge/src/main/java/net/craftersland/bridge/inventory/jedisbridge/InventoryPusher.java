@@ -19,21 +19,22 @@ public class InventoryPusher {
                 .map(player -> {
                     ItemStack[] inventory = main.getInventoryDataHandler().getInventory(player);
                     ItemStack[] armor = main.getInventoryDataHandler().getArmor(player);
-                    return new Object[] {
+                    return new Object[]{
                             player,
                             main.getInventoryDataHandler().encodeItems(inventory),
                             main.getInventoryDataHandler().encodeItems(armor)
                     };
                 })
                 .doOnNext(res ->
-                    main.getBridge().cachePlayer(
-                            ((Player) res[0]).getUniqueId(),
-                            (EncodeResult) res[1], // We encode data according to our configuration.
-                            (EncodeResult) res[2],
-                            false,
-                            (Player) res[0]
-                    )
+                        main.getBridge().cachePlayer(
+                                ((Player) res[0]).getUniqueId(),
+                                (EncodeResult) res[1], // We encode data according to our configuration.
+                                (EncodeResult) res[2],
+                                false,
+                                (Player) res[0]
+                        )
                 )
+                .onErrorResume(throwable -> Mono.empty())
                 .subscribe();
     }
 
