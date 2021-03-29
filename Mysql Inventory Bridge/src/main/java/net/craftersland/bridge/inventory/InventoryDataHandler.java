@@ -7,6 +7,7 @@ import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
 import org.apache.commons.lang.ArrayUtils;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -215,8 +216,9 @@ public class InventoryDataHandler {
 
         Arrays.stream(playerInventory).forEach(item -> {
             BlackListedItem currentItem = new BlackListedItem(item);
-            if (itemsBlacklist.contains(currentItem))
-                ArrayUtils.removeElement(playerInventory, item);
+            if (itemsBlacklist.contains(currentItem)) {
+                playerInventory[ArrayUtils.indexOf(playerInventory, item)] = null;
+            }
         });
 
         return playerInventory;
@@ -234,8 +236,9 @@ public class InventoryDataHandler {
 
             Arrays.stream(playerArmor).forEach(item -> {
                 BlackListedItem currentItem = new BlackListedItem(item);
-                if (itemsBlacklist.contains(currentItem))
-                    ArrayUtils.removeElement(playerArmor, item);
+                if (itemsBlacklist.contains(currentItem)) {
+                    playerArmor[ArrayUtils.indexOf(playerArmor, item)] = null;
+                }
             });
 
             return playerArmor;

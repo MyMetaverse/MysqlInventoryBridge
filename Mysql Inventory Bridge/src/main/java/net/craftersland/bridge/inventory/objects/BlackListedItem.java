@@ -11,9 +11,12 @@ public class BlackListedItem {
     private int customDataId;
 
     public BlackListedItem(ItemStack itemStack) {
-        this.material = itemStack.getType();
-        if (itemStack.getItemMeta() != null)
-            this.customDataId = itemStack.getItemMeta().getCustomModelData();
+        if (itemStack != null && itemStack.getItemMeta() != null) {
+            this.material = itemStack.getType();
+            if (itemStack.getItemMeta().hasCustomModelData()) {
+                this.customDataId = itemStack.getItemMeta().getCustomModelData();
+            }
+        }
     }
 
     public BlackListedItem(String itemRepresentation) {
@@ -49,12 +52,20 @@ public class BlackListedItem {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BlackListedItem that = (BlackListedItem) o;
-        return customDataId == that.customDataId && material == that.material;
+        return customDataId == that.customDataId && material.equals(that.material);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(material, customDataId);
+    }
+
+    @Override
+    public String toString() {
+        return "BlackListedItem{" +
+                "material=" + material +
+                ", customDataId=" + customDataId +
+                '}';
     }
 
 }
