@@ -3,10 +3,13 @@ package net.craftersland.bridge.inventory;
 import net.craftersland.bridge.inventory.encoder.*;
 import net.craftersland.bridge.inventory.jedisbridge.BridgeResult;
 import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
+import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
+import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
@@ -63,7 +66,7 @@ public class InventoryDataHandler {
             } else {
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
                     Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
-                inv = encodeItems(p.getInventory().getContents());
+                inv = encodeItems(this.getInventory(p));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,7 +77,7 @@ public class InventoryDataHandler {
                 if (inventoryDisconnect != null)
                     armor = encodeItems(armorDisconnect);
                 else
-                    armor = encodeItems(p.getInventory().getArmorContents());
+                    armor = encodeItems(this.getArmor(p));
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -89,8 +92,8 @@ public class InventoryDataHandler {
         Flux.fromIterable(players)
                 .filter(player -> !playersDisconnectSave.contains(player))
                 .map(p -> {
-                    ItemStack[] inventoryDisconnect = p.getInventory().getContents();
-                    ItemStack[] armorDisconnect = p.getInventory().getArmorContents();
+                    ItemStack[] inventoryDisconnect = this.getInventory(p);
+                    ItemStack[] armorDisconnect = this.getArmor(p);
 
                     if (datacleanup)
                         playersDisconnectSave.add(p);
@@ -204,15 +207,43 @@ public class InventoryDataHandler {
     }
 
     public ItemStack[] getInventory(Player p) {
-        return p.getInventory().getContents();
+
+        ItemStack[] playerInventory = p.getInventory().getContents();
+        List<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getConfigHandler().getStringList("Inventory.BlacklistedItems"))
+                .orElse(Collections.emptyList())
+                .stream().map(BlackListedItem::new).collect(Collectors.toList());
+
+        Arrays.stream(playerInventory).forEach(item -> {
+            BlackListedItem currentItem = new BlackListedItem(item);
+            if (itemsBlacklist.contains(currentItem))
+                ArrayUtils.removeElement(playerInventory, item);
+        });
+
+        return playerInventory;
+
     }
 
     public ItemStack[] getArmor(Player p) {
+
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
-            return p.getInventory().getArmorContents();
+
+            ItemStack[] playerArmor = p.getInventory().getArmorContents();
+            List<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getConfigHandler().getStringList("Inventory.BlacklistedItems"))
+                    .orElse(Collections.emptyList())
+                    .stream().map(BlackListedItem::new).collect(Collectors.toList());
+
+            Arrays.stream(playerArmor).forEach(item -> {
+                BlackListedItem currentItem = new BlackListedItem(item);
+                if (itemsBlacklist.contains(currentItem))
+                    ArrayUtils.removeElement(playerArmor, item);
+            });
+
+            return playerArmor;
+
         } else {
             return null;
         }
+
     }
 
     private void setInventory(final Player p, DataRetainer data, InventorySyncData syncData) {

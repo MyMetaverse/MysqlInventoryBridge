@@ -3,6 +3,7 @@ package net.craftersland.bridge.inventory;
 import org.bukkit.ChatColor;
 
 import java.io.File;
+import java.util.List;
 import java.util.Objects;
 
 public class ConfigHandler {
@@ -82,6 +83,15 @@ public class ConfigHandler {
 			return null;
 		} else {
 			return main.getConfig().getBoolean(key);
+		}
+	}
+
+	public List<String> getStringList(String key) {
+		if (!main.getConfig().contains(key)) {
+			main.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + Main.pluginName + " folder! (Try generating a new one by deleting the current)");
+			return null;
+		} else {
+			return main.getConfig().getStringList(key);
 		}
 	}
 
