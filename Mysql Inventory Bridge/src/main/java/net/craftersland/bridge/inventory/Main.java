@@ -1,5 +1,6 @@
 package net.craftersland.bridge.inventory;
 
+import io.mymetaverse.livewallet.api.MetaWalletAPI;
 import lombok.Getter;
 import net.craftersland.bridge.inventory.database.ConnectionHandler;
 import net.craftersland.bridge.inventory.database.InvMysqlInterface;
@@ -10,6 +11,7 @@ import net.craftersland.bridge.inventory.events.PlayerQuit;
 import net.craftersland.bridge.inventory.jedisbridge.Bridge;
 import net.craftersland.bridge.inventory.jedisbridge.InventoryPusher;
 import net.craftersland.bridge.inventory.migrator.DataMigrator;
+import net.craftersland.bridge.inventory.wallethook.WalletHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -47,6 +49,9 @@ public class Main extends JavaPlugin {
 
 	@Getter
 	private InventoryPusher inventoryPusher;
+
+	@Getter
+	private WalletHandler walletHandler;
 
 	@Override
     public void onEnable() {
@@ -86,7 +91,11 @@ public class Main extends JavaPlugin {
     	// Loading Redis inventory bridge.
 		this.bridge = new Bridge(this);
 
+		// Register WalletHandler
+		this.walletHandler = new WalletHandler(MetaWalletAPI.getInstance().getPlugin());
+
     	log.info(pluginName + " loaded successfully!");
+
 	}
 	
 	@Override

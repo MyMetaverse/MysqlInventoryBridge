@@ -4,11 +4,12 @@ version: "{version}"
 authors:
   - CraftersLand
   - RicardormDev
+  - Hugo1307
 website: www.craftersland.net & mymetaverse.io
 load: STARTUP
 api-version: 1.16
 description: Sync players inventorys over many servers using MySQL. This is an edited version for and by MyMetaverse
-softdepend: [ProtocolLib]
+softdepend: [ProtocolLib, MetaWallet]
 commands:
   mib:
     usage: /<command>

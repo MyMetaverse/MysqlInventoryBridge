@@ -66,3 +66,5 @@ ChatMessages:
     syncComplete: '&2[MIB] &aData sync complete!'
     inventorySyncError: '&4[WARNING] &cError loading your inventory! Contact the staff team.'
     inventorySyncBackup: '&6[!] &eRestored the local inventory! Don''t leave items in your inventory when you disconnect!'
+
+
