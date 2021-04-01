@@ -6,11 +6,10 @@ import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
 import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
+import net.craftersland.bridge.inventory.wallethook.WalletHandler;
 import org.apache.commons.lang.ArrayUtils;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
@@ -90,6 +89,10 @@ public class InventoryDataHandler {
 
 
     public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
+
+        if (!WalletHandler.getInstance().getStatus())
+            Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
+
         Flux.fromIterable(players)
                 .filter(player -> !playersDisconnectSave.contains(player))
                 .map(p -> {
@@ -210,9 +213,8 @@ public class InventoryDataHandler {
     public ItemStack[] getInventory(Player p) {
 
         ItemStack[] playerInventory = p.getInventory().getContents();
-        List<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getConfigHandler().getStringList("Inventory.BlacklistedItems"))
-                .orElse(Collections.emptyList())
-                .stream().map(BlackListedItem::new).collect(Collectors.toList());
+        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(WalletHandler.getInstance().getBlacklistItems())
+                .orElse(Collections.emptySet());
 
         Arrays.stream(playerInventory).forEach(item -> {
             BlackListedItem currentItem = new BlackListedItem(item);
@@ -230,9 +232,8 @@ public class InventoryDataHandler {
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
 
             ItemStack[] playerArmor = p.getInventory().getArmorContents();
-            List<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getConfigHandler().getStringList("Inventory.BlacklistedItems"))
-                    .orElse(Collections.emptyList())
-                    .stream().map(BlackListedItem::new).collect(Collectors.toList());
+            Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(WalletHandler.getInstance().getBlacklistItems())
+                    .orElse(Collections.emptySet());
 
             Arrays.stream(playerArmor).forEach(item -> {
                 BlackListedItem currentItem = new BlackListedItem(item);

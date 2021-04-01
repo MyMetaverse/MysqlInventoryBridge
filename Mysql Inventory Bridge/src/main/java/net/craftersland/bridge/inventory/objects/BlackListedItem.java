@@ -19,14 +19,6 @@ public class BlackListedItem {
         }
     }
 
-    public BlackListedItem(String itemRepresentation) {
-        load(itemRepresentation);
-    }
-
-    public String toRepresentation() {
-        return this.material.toString() + ";" + String.valueOf(this.customDataId);
-    }
-
     public BlackListedItem load(String itemRepresentation) {
 
         String[] itemRepresentationSplit = itemRepresentation.split(";");
@@ -52,7 +44,7 @@ public class BlackListedItem {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BlackListedItem that = (BlackListedItem) o;
-        return customDataId == that.customDataId && material.equals(that.material);
+        return customDataId == that.customDataId && material == that.material;
     }
 
     @Override
