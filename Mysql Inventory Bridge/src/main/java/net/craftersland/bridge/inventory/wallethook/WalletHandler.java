@@ -13,11 +13,9 @@ import java.util.Set;
 
 public class WalletHandler {
 
-    private static WalletHandler instance;
-
     private final Plugin walletPlugin;
 
-    private WalletHandler(Plugin walletPlugin) {
+    public WalletHandler(Plugin walletPlugin) {
         this.walletPlugin = walletPlugin;
     }
 
@@ -33,7 +31,6 @@ public class WalletHandler {
             if (registeredWeapon.getMaterial() == null) continue;
 
             if (registeredWeapon.getItemModelData() == null) continue;
-
 
             if (!registeredWeapon.getItemModelData().matches("[0-9.]+")) continue;
 
@@ -57,12 +54,6 @@ public class WalletHandler {
     public boolean getStatus() {
         if (this.walletPlugin == null) return false;
         return this.walletPlugin.isEnabled();
-    }
-
-    public static WalletHandler getInstance() {
-        if (instance == null)
-            instance = new WalletHandler(MetaWalletAPI.getInstance().getPlugin());
-        return instance;
     }
 
 }

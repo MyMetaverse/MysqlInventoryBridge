@@ -90,7 +90,7 @@ public class InventoryDataHandler {
 
     public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
 
-        if (!WalletHandler.getInstance().getStatus())
+        if (!main.getWalletHandler().getStatus())
             Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
 
         Flux.fromIterable(players)
@@ -213,7 +213,7 @@ public class InventoryDataHandler {
     public ItemStack[] getInventory(Player p) {
 
         ItemStack[] playerInventory = p.getInventory().getContents();
-        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(WalletHandler.getInstance().getBlacklistItems())
+        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
                 .orElse(Collections.emptySet());
 
         Arrays.stream(playerInventory).forEach(item -> {
@@ -232,7 +232,7 @@ public class InventoryDataHandler {
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
 
             ItemStack[] playerArmor = p.getInventory().getArmorContents();
-            Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(WalletHandler.getInstance().getBlacklistItems())
+            Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
                     .orElse(Collections.emptySet());
 
             Arrays.stream(playerArmor).forEach(item -> {
