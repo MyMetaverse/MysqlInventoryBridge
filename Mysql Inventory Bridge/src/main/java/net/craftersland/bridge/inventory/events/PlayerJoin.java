@@ -63,6 +63,7 @@ public class PlayerJoin implements Listener {
 
             if (player.isOnline()) {
                 boolean isSync = main.getInventoryDataHandler().onJoinFunction(player); // We try to sync the player wit cache.
+                queue.remove(player.getUniqueId());
                 if (isSync) // If achieved, send message.
                     new SyncCompleteTask(main, player).runTaskAsynchronously(main);
             }

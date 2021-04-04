@@ -17,7 +17,6 @@ public class InventoryDataHandler {
 
     private final Main main;
     private final Set<UUID> playersInSync = new HashSet<>();
-    private final Set<Player> playersDisconnectSave = new HashSet<>();
 
     private final HashMap<UUID, DataRetainer> waitingToLoad = new HashMap<>();
 
@@ -25,20 +24,19 @@ public class InventoryDataHandler {
         this.main = main;
     }
 
-    public boolean isSyncComplete(Player p) {
-        return playersInSync.contains(p.getUniqueId());
+    public boolean isSyncComplete(Player player) {
+        return playersInSync.contains(player.getUniqueId());
     }
 
-    private void dataCleanup(Player p) {
-        playersInSync.remove(p.getUniqueId());
-        playersDisconnectSave.remove(p);
+    private void dataCleanup(Player player) {
+        playersInSync.remove(player.getUniqueId());
     }
 
-    public void setPlayerData(final Player p, DataRetainer data, InventorySyncData syncData) {
+    public void setPlayerData(final Player player, DataRetainer data, InventorySyncData syncData) {
 
-        setInventory(p, data, syncData);
+        setInventory(player, data, syncData);
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
-            setArmor(p, data, syncData);
+            setArmor(player, data, syncData);
         }
 
     }
@@ -49,21 +47,21 @@ public class InventoryDataHandler {
                 encodeItems(playerMigrated.getArmor()));
     }
 
-    public EncodeResult[] convertData(Player p, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
+    public EncodeResult[] convertData(Player player, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
         EncodeResult inv = null;
         EncodeResult armor = null;
         if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-            Main.log.info("Inventory Debug - Save Data - Start - " + p.getName());
+            Main.log.info("Inventory Debug - Save Data - Start - " + player.getName());
         }
         try {
             if (inventoryDisconnect != null) {
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
-                    Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
+                    Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + player.getName());
                 inv = encodeItems(inventoryDisconnect);
             } else {
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
-                    Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
-                inv = encodeItems(p.getInventory().getContents());
+                    Main.log.info("Inventory Debug - Set Data - Saving inventory - " + player.getName());
+                inv = encodeItems(player.getInventory().getContents());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,7 +72,7 @@ public class InventoryDataHandler {
                 if (inventoryDisconnect != null)
                     armor = encodeItems(armorDisconnect);
                 else
-                    armor = encodeItems(p.getInventory().getArmorContents());
+                    armor = encodeItems(player.getInventory().getArmorContents());
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -87,13 +85,9 @@ public class InventoryDataHandler {
 
     public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
         Flux.fromIterable(players)
-                .filter(player -> !playersDisconnectSave.contains(player))
                 .map(p -> {
                     ItemStack[] inventoryDisconnect = p.getInventory().getContents();
                     ItemStack[] armorDisconnect = p.getInventory().getArmorContents();
-
-                    if (datacleanup)
-                        playersDisconnectSave.add(p);
 
                     boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
                     if (isPlayerInSync) {
@@ -112,25 +106,16 @@ public class InventoryDataHandler {
 
     }
 
-    public void onDataSaveFunction(Player p, Boolean datacleanup, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
-        if (playersDisconnectSave.contains(p)) {
-            if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-                Main.log.info("Inventory Debug - Save Data - Canceled - " + p.getName());
-            }
-            return;
-        }
-
-        if (datacleanup)
-            playersDisconnectSave.add(p);
-
-        boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
+    public void onDataSaveFunction(Player player, Boolean datacleanup, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
+        boolean isPlayerInSync = playersInSync.contains(player.getUniqueId());
         if (isPlayerInSync) {
-            EncodeResult[] results = convertData(p, inventoryDisconnect, armorDisconnect);
+            EncodeResult[] results = convertData(player, inventoryDisconnect, armorDisconnect);
             if(results != null)
-                main.getInvMysqlInterface().setData(p.getUniqueId(), results[0], results[1]);
+                main.getInvMysqlInterface().setData(player.getUniqueId(), results[0], results[1]);
         }
+
         if (datacleanup) {
-            dataCleanup(p);
+            dataCleanup(player);
         }
     }
 
@@ -176,7 +161,6 @@ public class InventoryDataHandler {
                     // The player wasn't saved, proceed saving the player without sync.
                     playersInSync.add(player.getUniqueId());
                     onDataSaveFunction(player, false, null, null);
-
                 } else {
                     // The player was saved.
 
