@@ -6,7 +6,6 @@ import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
 import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
-import net.craftersland.bridge.inventory.wallethook.WalletHandler;
 import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -234,9 +233,9 @@ public class InventoryDataHandler {
 
     }
 
-    private void setInventory(final Player p, DataRetainer data, InventorySyncData syncData) {
+    private void setInventory(final Player player, DataRetainer data, InventorySyncData syncData) {
         if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-            Main.log.info("Inventory Debug - Set Data - Start- " + p.getName());
+            Main.log.info("Inventory Debug - Set Data - Start- " + player.getName());
         }
 
         try {
@@ -244,25 +243,25 @@ public class InventoryDataHandler {
 
             if (inventory != null) {
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-                    Main.log.info("Inventory Debug - Set Data - Loading inventory - " + p.getName());
+                    Main.log.info("Inventory Debug - Set Data - Loading inventory - " + player.getName());
                 }
-                p.getInventory().setContents(inventory);
+                player.getInventory().setContents(inventory);
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-                    Main.log.info("Inventory Debug - Set Data - Inventory set - " + p.getName());
+                    Main.log.info("Inventory Debug - Set Data - Inventory set - " + player.getName());
                 }
             } else {
                 if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
-                    Main.log.info("Inventory Debug - Set Data - Restoring local inventory - " + p.getName());
+                    Main.log.info("Inventory Debug - Set Data - Restoring local inventory - " + player.getName());
                 }
-                p.getInventory().setContents(syncData.getBackupInventory());
+                player.getInventory().setContents(syncData.getBackupInventory());
             }
         } catch (IOException e) {
             e.printStackTrace();
-            runBackup(p, syncData);
+            runBackup(player, syncData);
         }
 
 
-        p.updateInventory();
+        player.updateInventory();
     }
 
     private void runBackup(Player player, InventorySyncData inventorySyncData) {
