@@ -11,6 +11,7 @@ import net.craftersland.bridge.inventory.events.PlayerQuit;
 import net.craftersland.bridge.inventory.jedisbridge.Bridge;
 import net.craftersland.bridge.inventory.jedisbridge.InventoryPusher;
 import net.craftersland.bridge.inventory.migrator.DataMigrator;
+import net.craftersland.bridge.inventory.mongo.InvMongoInterface;
 import net.craftersland.bridge.inventory.wallethook.WalletHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -38,6 +39,7 @@ public class Main extends JavaPlugin {
 	private static SoundHandler sH;
 	private static MysqlSetup databaseManager;
 	private static InvMysqlInterface invMysqlInterface;
+	private static InvMongoInterface invMongoInterface;
 	private static InventoryDataHandler idH;
 	private static BackgroundTask bt;
 
@@ -92,7 +94,11 @@ public class Main extends JavaPlugin {
 		this.bridge = new Bridge(this);
 
 		// Register WalletHandler
-		this.walletHandler = new WalletHandler(MetaWalletAPI.getInstance().getPlugin());
+		this.walletHandler = new WalletHandler();
+
+		// Create Interface for MongoDB
+		InvMongoInterface.createInstance(this);
+		invMongoInterface = InvMongoInterface.getInstance();
 
     	log.info(pluginName + " loaded successfully!");
 
@@ -105,6 +111,7 @@ public class Main extends JavaPlugin {
 		HandlerList.unregisterAll(this);
 		bt.onShutDownDataSave();
 		databaseManager.closeConnection();
+		invMongoInterface.closeConnection();
 		bridge.closeRedis();
 		log.info(pluginName + " is disabled!");
 	}
@@ -126,6 +133,9 @@ public class Main extends JavaPlugin {
 	}
 	public InventoryDataHandler getInventoryDataHandler() {
 		return idH;
+	}
+	public InvMongoInterface getInvMongoInterface() {
+		return invMongoInterface;
 	}
 	
 	private boolean getMcVersion() {

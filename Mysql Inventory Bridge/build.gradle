@@ -12,6 +12,9 @@ version = '2.4.1-MME-1.0.0'
 repositories {
     mavenCentral()
     mavenLocal()
+
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+
     maven {
         name = 'papermc-repo'
         url = 'https://papermc.io/repo/repository/maven-public/'
@@ -21,6 +24,12 @@ repositories {
         name = 'dmulloy2-repo'
         url = 'https://repo.dmulloy2.net/repository/public/'
     }
+
+    maven {
+        name = 'spigot-repo'
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+    }
+
 }
 
 processResources {
@@ -28,7 +37,11 @@ processResources {
 }
 
 dependencies {
-    compileOnly 'org.spigotmc:spigot:1.16.5-R0.1-SNAPSHOT'
+
+    implementation 'org.projectlombok:lombok:1.18.18'
+    compileOnly 'org.spigotmc:spigot:1.16.4-R0.1-SNAPSHOT' // The full Spigot server with no shadowing. Requires mavenLocal.
+    //compileOnly 'org.bukkit:craftbukkit:1.12.2-R0.1-SNAPSHOT'
+    compileOnly 'org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT'
 
     compileOnly 'org.projectlombok:lombok:1.18.12'
     annotationProcessor 'org.projectlombok:lombok:1.18.12'
@@ -48,7 +61,12 @@ dependencies {
 
     implementation 'redis.clients:jedis:3.5.2'
 
+    compileOnly 'io.mymetaverse:MetaWallet:0.0.1'
+
     compile 'io.projectreactor:reactor-core:3.4.4'
+
+    compile 'org.mongodb:mongodb-driver:3.12.0'
+
 }
 
 shadowJar {

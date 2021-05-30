@@ -3,7 +3,9 @@ package net.craftersland.bridge.inventory.wallethook;
 import io.mymetaverse.livewallet.api.MetaWalletAPI;
 import io.mymetaverse.livewallet.data.tokens.RegisteredToken;
 import io.mymetaverse.livewallet.utils.TabType;
+import net.craftersland.bridge.inventory.Main;
 import net.craftersland.bridge.inventory.objects.BlackListedItem;
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
@@ -13,11 +15,7 @@ import java.util.Set;
 
 public class WalletHandler {
 
-    private final Plugin walletPlugin;
-
-    public WalletHandler(Plugin walletPlugin) {
-        this.walletPlugin = walletPlugin;
-    }
+    private Plugin walletPlugin;
 
     public Set<BlackListedItem> getBlacklistItems() {
 
@@ -52,7 +50,16 @@ public class WalletHandler {
     }
 
     public boolean getStatus() {
-        if (this.walletPlugin == null) return false;
+        if (this.walletPlugin == null)
+            if (Bukkit.getServer().getPluginManager().isPluginEnabled("MetaWallet")) {
+                if (MetaWalletAPI.getInstance().getPlugin() != null)
+                    this.walletPlugin = MetaWalletAPI.getInstance().getPlugin();
+                else
+                    return false;
+            } else {
+                return false;
+            }
+
         return this.walletPlugin.isEnabled();
     }
 

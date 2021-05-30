@@ -10,6 +10,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.*;
@@ -90,7 +91,7 @@ public class InventoryDataHandler {
         if (!main.getWalletHandler().getStatus())
             Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
 
-        Flux.fromIterable(players)
+        Mono<List<Object[]>> monoOp = Flux.fromIterable(players)
                 .map(p -> {
                     ItemStack[] inventoryDisconnect = this.getInventory(p);
                     ItemStack[] armorDisconnect = this.getArmor(p);
@@ -107,8 +108,10 @@ public class InventoryDataHandler {
                     return new Object[0];
                 })
                 .filter(objects -> objects.length > 0)
-                .collect(Collectors.toList())
-                .subscribe(main.getInvMysqlInterface()::setData);
+                .collect(Collectors.toList());
+
+        monoOp.subscribe(main.getInvMysqlInterface()::setData);
+        monoOp.subscribe(main.getInvMongoInterface()::setData);
 
     }
 
@@ -116,8 +119,10 @@ public class InventoryDataHandler {
         boolean isPlayerInSync = playersInSync.contains(player.getUniqueId());
         if (isPlayerInSync) {
             EncodeResult[] results = convertData(player, inventoryDisconnect, armorDisconnect);
-            if(results != null)
+            if(results != null) {
                 main.getInvMysqlInterface().setData(player.getUniqueId(), results[0], results[1]);
+                main.getInvMongoInterface().updatePlayerData(player.getUniqueId(), results[0], results[1]);
+            }
         }
 
         if (datacleanup) {
