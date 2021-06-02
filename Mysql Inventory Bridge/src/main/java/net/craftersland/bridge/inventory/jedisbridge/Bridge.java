@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.exceptions.JedisException;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.SetParams;
 
 import java.io.ByteArrayOutputStream;
@@ -19,12 +19,11 @@ import java.util.UUID;
 
 public class Bridge {
 
-    private static final SetParams TIMEOUT = new SetParams().ex(500); // We set the cache to 800 seconds.
+    private static final SetParams TIMEOUT = new SetParams().ex(500L); // We set the cache to 800 seconds.
 
     private final Main main;
 
-    private Jedis jedis;
-    private Jedis announcer;
+    JedisPool jedisPool;
 
     public final Set<UUID> loadedFromMessage = new HashSet<>();
 
@@ -41,28 +40,19 @@ public class Bridge {
         new BukkitRunnable() {
             @Override
             public void run() {
-                announcer.subscribe(bridgeAnnouncer, "mib".getBytes(StandardCharsets.UTF_8));
+                jedisPool.getResource().subscribe(bridgeAnnouncer, "mib".getBytes(StandardCharsets.UTF_8));
             }
         }.runTaskAsynchronously(main);
+
     }
 
     public void connect() {
-        this.jedis = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
-        announcer = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
-    }
-
-    public void checkConnectionStatus() {
-        try {
-            this.jedis.ping();
-        } catch (JedisException ex) {
-            this.jedis.close();
-            this.jedis = new Jedis(main.getConfigHandler().getString("redis.host", "localhost"), 6379, false);
-        }
+        this.jedisPool = new JedisPool(new JedisPoolConfig(), main.getConfigHandler().getString("redis.host", "localhost"));
     }
 
     public void closeRedis() {
-        jedis.close();
-        announcer.close();
+        jedisPool.close();
+        jedisPool.destroy();
     }
 
     /**
@@ -71,22 +61,24 @@ public class Bridge {
      * @return The result of the read.
      */
     public BridgeResult readPlayer(UUID uniqueId) {
-        checkConnectionStatus();
+        try (Jedis jedis = this.jedisPool.getResource()) {
 
-        if(loadedFromMessage.remove(uniqueId))
-            return new BridgeResult(BridgeResult.Result.DONE);
+            if(loadedFromMessage.remove(uniqueId))
+                return new BridgeResult(BridgeResult.Result.DONE);
 
-        // We first check if the player is in memory.
-        if(!jedis.exists("mibPlayer:" + uniqueId.toString())) // This key will be saved when a player joins the server.
-            return new BridgeResult(BridgeResult.Result.NOT_SAVED); // If is not saved, we need to get data from SQL.
+            // We first check if the player is in memory.
+            if(!jedis.exists("mibPlayer:" + uniqueId.toString())) // This key will be saved when a player joins the server.
+                return new BridgeResult(BridgeResult.Result.NOT_SAVED); // If is not saved, we need to get data from SQL.
 
-        // If the player exists we'll use the data inside our bridge object.
-        return new BridgeResult(
-                jedis.get("mibPlayer:inventory:" + uniqueId.toString()),
-                jedis.get("mibPlayer:armor:" + uniqueId.toString()),
-                jedis.get("mibPlayer:codec:" + uniqueId.toString()),
-                BridgeResult.Result.SAVED
-        );
+            // If the player exists we'll use the data inside our bridge object.
+            return new BridgeResult(
+                    jedis.get("mibPlayer:inventory:" + uniqueId),
+                    jedis.get("mibPlayer:armor:" + uniqueId),
+                    jedis.get("mibPlayer:codec:" + uniqueId),
+                    BridgeResult.Result.SAVED
+            );
+        }
+
     }
 
     /**
@@ -96,31 +88,32 @@ public class Bridge {
      * @param armor The armor encoded.
      */
     public void cachePlayer(UUID uniqueId, EncodeResult inventory, EncodeResult armor, boolean announce, Player player) {
-        checkConnectionStatus();
+        try (Jedis jedis = jedisPool.getResource()) {
 
-        jedis.set("mibPlayer:codec:" + uniqueId.toString(), inventory.getCodec(), TIMEOUT);
-        jedis.set("mibPlayer:inventory:" + uniqueId.toString(), inventory.getResult(), TIMEOUT);
-        jedis.set("mibPlayer:armor:" + uniqueId.toString(), armor.getResult(), TIMEOUT);
+            jedis.set("mibPlayer:codec:" + uniqueId.toString(), inventory.getCodec(), TIMEOUT);
+            jedis.set("mibPlayer:inventory:" + uniqueId, inventory.getResult(), TIMEOUT);
+            jedis.set("mibPlayer:armor:" + uniqueId, armor.getResult(), TIMEOUT);
 
-        registerPlayer(uniqueId);
+            registerPlayer(uniqueId);
 
-        if (announce) {
-            try(ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                try (ObjectOutputStream outputStream = new ObjectOutputStream(byteArrayOutputStream)) {
-                    outputStream.writeObject(new BridgeTransporter(
-                            uniqueId,
-                            inventory.getResult(),
-                            armor.getResult(),
-                            inventory.getCodec(),
-                            player != null ? player.getInventory().getHeldItemSlot() : -1
-                            ));
-                    outputStream.flush();
-                    jedis.publish("mib".getBytes(StandardCharsets.UTF_8), byteArrayOutputStream.toByteArray());
+            if (announce) {
+                try(ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+                    try (ObjectOutputStream outputStream = new ObjectOutputStream(byteArrayOutputStream)) {
+                        outputStream.writeObject(new BridgeTransporter(
+                                uniqueId,
+                                inventory.getResult(),
+                                armor.getResult(),
+                                inventory.getCodec(),
+                                player != null ? player.getInventory().getHeldItemSlot() : -1
+                        ));
+                        outputStream.flush();
+                        jedis.publish("mib".getBytes(StandardCharsets.UTF_8), byteArrayOutputStream.toByteArray());
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
 
+            }
         }
     }
 
@@ -129,9 +122,9 @@ public class Bridge {
      * @param uniqueId The player to be register.
      */
     public void registerPlayer(UUID uniqueId) {
-        checkConnectionStatus();
-
-        jedis.set("mibPlayer:" + uniqueId.toString(), "y", TIMEOUT);
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.set("mibPlayer:" + uniqueId.toString(), "y", TIMEOUT);
+        }
     }
 
 
