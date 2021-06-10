@@ -1,5 +1,6 @@
 package net.craftersland.bridge.inventory;
 
+import net.craftersland.bridge.inventory.api.SaveInventoryEvent;
 import net.craftersland.bridge.inventory.encoder.*;
 import net.craftersland.bridge.inventory.jedisbridge.BridgeResult;
 import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
@@ -7,9 +8,13 @@ import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
 import org.apache.commons.lang.ArrayUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.*;
@@ -91,6 +96,12 @@ public class InventoryDataHandler {
             Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
 
         Flux.fromIterable(players)
+                .filterWhen(player -> {
+                    SaveInventoryEvent inventoryEvent = new SaveInventoryEvent(player);
+                    Bukkit.getPluginManager().callEvent(inventoryEvent);
+
+                    return Mono.just(!inventoryEvent.isCancelled());
+                })
                 .map(p -> {
                     ItemStack[] inventoryDisconnect = this.getInventory(p);
                     ItemStack[] armorDisconnect = this.getArmor(p);
@@ -113,6 +124,12 @@ public class InventoryDataHandler {
     }
 
     public void onDataSaveFunction(Player player, Boolean datacleanup, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
+        SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(player);
+        Bukkit.getPluginManager().callEvent(saveInventoryEvent);
+
+        if(saveInventoryEvent.isCancelled())
+            return;
+
         boolean isPlayerInSync = playersInSync.contains(player.getUniqueId());
         if (isPlayerInSync) {
             EncodeResult[] results = convertData(player, inventoryDisconnect, armorDisconnect);
@@ -327,6 +344,31 @@ public class InventoryDataHandler {
             // If anything goes wrong we can try to decide with vanilla decoder.
             return result != null ? result : new VanillaEncoder().decode(data);
         } else return decodeItems(data); // If no encoder found, we try to decode with the customized encoder.
+
+    }
+
+
+
+    public void savePlayer(Player p, ItemStack[] inventory, ItemStack[] armor) {
+        SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(p);
+        Bukkit.getPluginManager().callEvent(saveInventoryEvent);
+
+        if(saveInventoryEvent.isCancelled())
+            return;
+
+        if (main.getInventoryDataHandler().isSyncComplete(p)) { // Only save if the player is sync.
+            // First we need to save the player into redis.
+            main.getBridge().cachePlayer(p.getUniqueId(),
+                    main.getInventoryDataHandler().encodeItems(inventory), // We encode data according to our configuration.
+                    main.getInventoryDataHandler().encodeItems(armor),
+                    false,
+                    p
+            );
+
+            main.getInventoryDataHandler().onDataSaveFunction(p, false, inventory, armor);
+            main.getLogger().info(p.getUniqueId() + " inventory was saved into database.");
+        }
+
 
     }
 

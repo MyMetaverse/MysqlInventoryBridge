@@ -1,4 +1,4 @@
-package net.craftersland.bridge.inventory.wallethook;
+package net.craftersland.bridge.inventory.hooks;
 
 import io.mymetaverse.livewallet.api.MetaWalletAPI;
 import io.mymetaverse.livewallet.data.tokens.RegisteredToken;
