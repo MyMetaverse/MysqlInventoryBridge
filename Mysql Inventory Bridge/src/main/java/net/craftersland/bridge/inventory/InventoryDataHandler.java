@@ -95,6 +95,12 @@ public class InventoryDataHandler {
         if (!main.getWalletHandler().getStatus())
             Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
 
+        
+        for (Player player : players) {
+            main.getInventoryDataHandler().savePlayer(player, main.getInventoryDataHandler().getInventory(player), main.getInventoryDataHandler().getArmor(player));
+        }
+        
+        /*
         Flux.fromIterable(players)
                 .filterWhen(player -> {
                     SaveInventoryEvent inventoryEvent = new SaveInventoryEvent(player);
@@ -120,6 +126,7 @@ public class InventoryDataHandler {
                 .filter(objects -> objects.length > 0)
                 .collect(Collectors.toList())
                 .subscribe(main.getInvMysqlInterface()::setData);
+                */
 
     }
 
