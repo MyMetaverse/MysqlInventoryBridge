@@ -1,8 +1,7 @@
 package net.craftersland.bridge.inventory.hooks;
 
 import io.mymetaverse.livewallet.api.MetaWalletAPI;
-import io.mymetaverse.livewallet.data.tokens.RegisteredToken;
-import io.mymetaverse.livewallet.utils.TabType;
+import io.mymetaverse.livewallet.data.items.RegisteredToken;
 import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,23 +19,19 @@ public class WalletHandler {
     }
 
     public Set<BlackListedItem> getBlacklistItems() {
+        if (this.getStatus()) return null;
 
-        if (!this.getStatus()) return null;
-
-        Set<RegisteredToken> registeredWeapons = MetaWalletAPI.getInstance().getSpecificTokens(TabType.EQUIPMENT);
+        Set<RegisteredToken> registeredWeapons = MetaWalletAPI.getInstance().getSpecificTokens("equipment");
         Set<BlackListedItem> blackListedItems = new HashSet<>();
 
         for (RegisteredToken registeredWeapon : registeredWeapons) {
-
             if (registeredWeapon.getMaterial() == null) continue;
-
             if (registeredWeapon.getItemModelData() == null) continue;
-
             if (!registeredWeapon.getItemModelData().matches("[0-9.]+")) continue;
 
             ItemStack weaponItem = new ItemStack(registeredWeapon.getMaterial());
             ItemMeta weaponItemMeta = weaponItem.getItemMeta();
-            int weaponCustomModelData = (int)Double.parseDouble(registeredWeapon.getItemModelData());
+            int weaponCustomModelData = (int) Double.parseDouble(registeredWeapon.getItemModelData());
 
             if (weaponItemMeta == null) continue;
 
@@ -52,8 +47,7 @@ public class WalletHandler {
     }
 
     public boolean getStatus() {
-        if (this.walletPlugin == null) return false;
-        return this.walletPlugin.isEnabled();
+        if (this.walletPlugin == null) return true;
+        return !this.walletPlugin.isEnabled();
     }
-
 }

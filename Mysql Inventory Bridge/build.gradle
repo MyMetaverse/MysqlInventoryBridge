@@ -48,12 +48,13 @@ dependencies {
 
     implementation 'redis.clients:jedis:3.6.0'
 
-    compile 'io.projectreactor:reactor-core:3.4.4'
+    compileOnly 'io.projectreactor:reactor-core:3.4.4'
+
+    compileOnly "io.mymetaverse:MetaWallet:2.0.1"
+
+    compileOnly "su.nightexpress:AdvancedMobArena:7.5.3"
+
+    compileOnly "su.nexmedia.engine:NexEngine:7.5.3"
 
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
 }
-
-shadowJar {
-
-}
-

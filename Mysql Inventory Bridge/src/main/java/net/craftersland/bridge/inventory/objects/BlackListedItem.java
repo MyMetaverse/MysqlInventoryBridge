@@ -19,26 +19,6 @@ public class BlackListedItem {
         }
     }
 
-    public BlackListedItem load(String itemRepresentation) {
-
-        String[] itemRepresentationSplit = itemRepresentation.split(";");
-
-        if (itemRepresentationSplit.length != 2) return null;
-
-        if (!itemRepresentationSplit[1].matches("[0-9]+")) return null;
-
-        Material itemMaterial = Material.matchMaterial(itemRepresentationSplit[0]);
-        int customDataId = Integer.parseInt(itemRepresentationSplit[1]);
-
-        if (itemMaterial == null) return null;
-
-        this.material = itemMaterial;
-        this.customDataId = customDataId;
-
-        return this;
-
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -59,5 +39,4 @@ public class BlackListedItem {
                 ", customDataId=" + customDataId +
                 '}';
     }
-
 }

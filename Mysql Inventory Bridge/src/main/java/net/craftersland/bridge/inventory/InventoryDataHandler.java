@@ -7,12 +7,9 @@ import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
 import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
-import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -92,7 +89,7 @@ public class InventoryDataHandler {
 
     public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
 
-        if (!main.getWalletHandler().getStatus())
+        if (main.getWalletHandler().getStatus())
             Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
 
         Flux.fromIterable(players)
@@ -127,13 +124,13 @@ public class InventoryDataHandler {
         SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(player);
         Bukkit.getPluginManager().callEvent(saveInventoryEvent);
 
-        if(saveInventoryEvent.isCancelled())
+        if (saveInventoryEvent.isCancelled())
             return;
 
         boolean isPlayerInSync = playersInSync.contains(player.getUniqueId());
         if (isPlayerInSync) {
             EncodeResult[] results = convertData(player, inventoryDisconnect, armorDisconnect);
-            if(results != null)
+            if (results != null)
                 main.getInvMysqlInterface().setData(player.getUniqueId(), results[0], results[1]);
         }
 
@@ -211,39 +208,24 @@ public class InventoryDataHandler {
     }
 
     public ItemStack[] getInventory(Player p) {
-
         ItemStack[] playerInventory = p.getInventory().getContents();
-        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
-                .orElse(Collections.emptySet());
-
-        Arrays.stream(playerInventory).forEach(item -> {
-            BlackListedItem currentItem = new BlackListedItem(item);
-            if (itemsBlacklist.contains(currentItem)) {
-                playerInventory[ArrayUtils.indexOf(playerInventory, item)] = null;
-            }
-        });
-
-        return playerInventory;
+        return removeBlacklisted(playerInventory);
 
     }
 
+    private ItemStack[] removeBlacklisted(ItemStack[] playerInventory) {
+        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
+                .orElse(Collections.emptySet());
+
+        return Arrays.stream(playerInventory)
+                .filter(item -> !itemsBlacklist.contains(new BlackListedItem(item)))
+                .toArray(ItemStack[]::new);
+    }
+
     public ItemStack[] getArmor(Player p) {
-
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
-
             ItemStack[] playerArmor = p.getInventory().getArmorContents();
-            Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
-                    .orElse(Collections.emptySet());
-
-            Arrays.stream(playerArmor).forEach(item -> {
-                BlackListedItem currentItem = new BlackListedItem(item);
-                if (itemsBlacklist.contains(currentItem)) {
-                    playerArmor[ArrayUtils.indexOf(playerArmor, item)] = null;
-                }
-            });
-
-            return playerArmor;
-
+            return removeBlacklisted(playerArmor);
         } else {
             return null;
         }
@@ -324,36 +306,11 @@ public class InventoryDataHandler {
         }
     }
 
-    public ItemStack[] decodeItems(String data) throws Exception {
-        if (main.useProtocolLib && main.getConfigHandler().getBoolean("General.enableModdedItemsSupport")) {
-            ItemStack[] it = new ModdedEncoder().decode(data);
-            if (it == null) {
-                it = new VanillaEncoder().decode(data);
-            }
-            return it;
-        } else {
-            return new VanillaEncoder().decode(data);
-        }
-    }
-
-    public ItemStack[] decodeItems(String data, String codec) throws Exception {
-        // We first try to decode the items with the saved codec.
-        Encoder encoder = EncoderFactory.getEncoder(codec);
-        if (encoder != null) {
-            ItemStack[] result = encoder.decode(data);
-            // If anything goes wrong we can try to decide with vanilla decoder.
-            return result != null ? result : new VanillaEncoder().decode(data);
-        } else return decodeItems(data); // If no encoder found, we try to decode with the customized encoder.
-
-    }
-
-
-
     public void savePlayer(Player p, ItemStack[] inventory, ItemStack[] armor) {
         SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(p);
         Bukkit.getPluginManager().callEvent(saveInventoryEvent);
 
-        if(saveInventoryEvent.isCancelled())
+        if (saveInventoryEvent.isCancelled())
             return;
 
         if (main.getInventoryDataHandler().isSyncComplete(p)) { // Only save if the player is sync.

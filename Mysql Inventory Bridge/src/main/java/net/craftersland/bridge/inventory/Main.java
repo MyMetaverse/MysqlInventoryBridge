@@ -99,7 +99,12 @@ public class Main extends JavaPlugin {
         this.bridge = new Bridge(this);
 
         // Register WalletHandler
-        this.walletHandler = new WalletHandler(MetaWalletAPI.getInstance().getPlugin());
+        JavaPlugin walletPlugin = null;
+        try {
+            walletPlugin = MetaWalletAPI.getInstance().getPlugin();
+        } catch (Exception ignored) {
+        }
+        this.walletHandler = new WalletHandler(walletPlugin);
 
         log.info(pluginName + " loaded successfully!");
 
