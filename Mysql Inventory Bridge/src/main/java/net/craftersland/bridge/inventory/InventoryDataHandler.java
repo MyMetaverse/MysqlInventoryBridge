@@ -1,10 +1,21 @@
 package net.craftersland.bridge.inventory;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import net.craftersland.bridge.inventory.api.SaveInventoryEvent;
-import net.craftersland.bridge.inventory.encoder.*;
+import net.craftersland.bridge.inventory.encoder.DataRetainer;
+import net.craftersland.bridge.inventory.encoder.EncodeResult;
+import net.craftersland.bridge.inventory.encoder.ModdedEncoder;
+import net.craftersland.bridge.inventory.encoder.VanillaEncoder;
 import net.craftersland.bridge.inventory.jedisbridge.BridgeResult;
 import net.craftersland.bridge.inventory.migrator.PlayerMigrated;
-import net.craftersland.bridge.inventory.objects.BlackListedItem;
 import net.craftersland.bridge.inventory.objects.DatabaseInventoryData;
 import net.craftersland.bridge.inventory.objects.InventorySyncData;
 import org.bukkit.Bukkit;
@@ -12,10 +23,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class InventoryDataHandler {
 
@@ -47,8 +54,8 @@ public class InventoryDataHandler {
 
     public void forceMigratedDataSave(PlayerMigrated playerMigrated) {
         main.getInvMysqlInterface().setData(playerMigrated.getUniqueId(),
-                encodeItems(playerMigrated.getInventory()),
-                encodeItems(playerMigrated.getArmor()));
+            encodeItems(playerMigrated.getInventory()),
+            encodeItems(playerMigrated.getArmor()));
     }
 
     public EncodeResult[] convertData(Player p, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
@@ -59,12 +66,14 @@ public class InventoryDataHandler {
         }
         try {
             if (inventoryDisconnect != null) {
-                if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
+                if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
                     Main.log.info("Inventory Debug - Set Data - Saving disconnect inventory - " + p.getName());
+                }
                 inv = encodeItems(inventoryDisconnect);
             } else {
-                if (main.getConfigHandler().getBoolean("Debug.InventorySync"))
+                if (main.getConfigHandler().getBoolean("Debug.InventorySync")) {
                     Main.log.info("Inventory Debug - Set Data - Saving inventory - " + p.getName());
+                }
                 inv = encodeItems(this.getInventory(p));
             }
         } catch (Exception e) {
@@ -73,65 +82,66 @@ public class InventoryDataHandler {
         if (main.getConfigHandler().getBoolean("General.syncArmorEnabled")) {
             try {
 
-                if (inventoryDisconnect != null)
+                if (inventoryDisconnect != null) {
                     armor = encodeItems(armorDisconnect);
-                else
+                } else {
                     armor = encodeItems(this.getArmor(p));
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        return new EncodeResult[]{inv, armor};
+        return new EncodeResult[] {inv, armor};
     }
 
 
     public void saveMultiplePlayers(Collection<Player> players, Boolean datacleanup) {
-
-        if (main.getWalletHandler().getStatus())
-            Main.log.warning("Wallet dependency not found. Items won't be blacklisted anymore.");
-
         Flux.fromIterable(players)
-                .filterWhen(player -> {
-                    SaveInventoryEvent inventoryEvent = new SaveInventoryEvent(player);
-                    Bukkit.getPluginManager().callEvent(inventoryEvent);
+            .filterWhen(player -> {
+                SaveInventoryEvent inventoryEvent = new SaveInventoryEvent(player);
+                Bukkit.getPluginManager().callEvent(inventoryEvent);
 
-                    return Mono.just(!inventoryEvent.isCancelled());
-                })
-                .map(p -> {
-                    ItemStack[] inventoryDisconnect = this.getInventory(p);
-                    ItemStack[] armorDisconnect = this.getArmor(p);
+                return Mono.just(!inventoryEvent.isCancelled());
+            })
+            .map(p -> {
+                ItemStack[] inventoryDisconnect = this.getInventory(p);
+                ItemStack[] armorDisconnect = this.getArmor(p);
 
-                    boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
-                    if (isPlayerInSync) {
-                        EncodeResult[] results = convertData(p, inventoryDisconnect, armorDisconnect);
-                        if (results != null)
-                            return new Object[]{p.getUniqueId(), results[0], results[1]};
+                boolean isPlayerInSync = playersInSync.contains(p.getUniqueId());
+                if (isPlayerInSync) {
+                    EncodeResult[] results = convertData(p, inventoryDisconnect, armorDisconnect);
+                    if (results != null) {
+                        return new Object[] {p.getUniqueId(), results[0], results[1]};
                     }
-                    if (datacleanup) {
-                        dataCleanup(p);
-                    }
-                    return new Object[0];
-                })
-                .filter(objects -> objects.length > 0)
-                .collect(Collectors.toList())
-                .subscribe(main.getInvMysqlInterface()::setData);
+                }
+                if (datacleanup) {
+                    dataCleanup(p);
+                }
+                return new Object[0];
+            })
+            .filter(objects -> objects.length > 0)
+            .collect(Collectors.toList())
+            .subscribe(main.getInvMysqlInterface()::setData);
 
     }
 
-    public void onDataSaveFunction(Player player, Boolean datacleanup, ItemStack[] inventoryDisconnect, ItemStack[] armorDisconnect) {
+    public void onDataSaveFunction(Player player, Boolean datacleanup, ItemStack[] inventoryDisconnect,
+        ItemStack[] armorDisconnect) {
         SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(player);
         Bukkit.getPluginManager().callEvent(saveInventoryEvent);
 
-        if (saveInventoryEvent.isCancelled())
+        if (saveInventoryEvent.isCancelled()) {
             return;
+        }
 
         boolean isPlayerInSync = playersInSync.contains(player.getUniqueId());
         if (isPlayerInSync) {
             EncodeResult[] results = convertData(player, inventoryDisconnect, armorDisconnect);
-            if (results != null)
+            if (results != null) {
                 main.getInvMysqlInterface().setData(player.getUniqueId(), results[0], results[1]);
+            }
         }
 
         if (datacleanup) {
@@ -141,7 +151,9 @@ public class InventoryDataHandler {
 
 
     public boolean preLoadPlayer(UUID uniqueId) {
-        if (Main.isDisabling || main.getInvMysqlInterface() == null) return false;
+        if (Main.isDisabling || main.getInvMysqlInterface() == null) {
+            return false;
+        }
 
         return main.getConnectionHandler().execute(connection -> {
             if (main.getInvMysqlInterface().hasAccount(connection, uniqueId)) {
@@ -172,7 +184,9 @@ public class InventoryDataHandler {
      * @return If the player was sync into memory.
      */
     public boolean onJoinFunction(Player player, boolean force) {
-        if (Main.isDisabling) return false;
+        if (Main.isDisabling) {
+            return false;
+        }
 
         if (!playersInSync.contains(player.getUniqueId()) || force) {
             if (waitingToLoad.containsKey(player.getUniqueId())) {
@@ -186,8 +200,8 @@ public class InventoryDataHandler {
 
                     // Backup player's inventory in case anything goes wrong while sync.
                     InventorySyncData syncData = new InventorySyncData(
-                            player.getInventory().getContents(),
-                            player.getInventory().getArmorContents()
+                        player.getInventory().getContents(),
+                        player.getInventory().getArmorContents()
                     );
 
                     player.setItemOnCursor(null);
@@ -202,7 +216,9 @@ public class InventoryDataHandler {
                 }
                 return true;
             }
-        } else return true;
+        } else {
+            return true;
+        }
 
         return false;
     }
@@ -214,12 +230,9 @@ public class InventoryDataHandler {
     }
 
     private ItemStack[] removeBlacklisted(ItemStack[] playerInventory) {
-        Set<BlackListedItem> itemsBlacklist = Optional.ofNullable(main.getWalletHandler().getBlacklistItems())
-                .orElse(Collections.emptySet());
-
         return Arrays.stream(playerInventory)
-                .filter(item -> !itemsBlacklist.contains(new BlackListedItem(item)))
-                .toArray(ItemStack[]::new);
+            .filter(item -> item.getItemMeta() == null || !item.getItemMeta().hasCustomModelData())
+            .toArray(ItemStack[]::new);
     }
 
     public ItemStack[] getArmor(Player p) {
@@ -310,16 +323,17 @@ public class InventoryDataHandler {
         SaveInventoryEvent saveInventoryEvent = new SaveInventoryEvent(p);
         Bukkit.getPluginManager().callEvent(saveInventoryEvent);
 
-        if (saveInventoryEvent.isCancelled())
+        if (saveInventoryEvent.isCancelled()) {
             return;
+        }
 
         if (main.getInventoryDataHandler().isSyncComplete(p)) { // Only save if the player is sync.
             // First we need to save the player into redis.
             main.getBridge().cachePlayer(p.getUniqueId(),
-                    main.getInventoryDataHandler().encodeItems(inventory), // We encode data according to our configuration.
-                    main.getInventoryDataHandler().encodeItems(armor),
-                    false,
-                    p
+                main.getInventoryDataHandler().encodeItems(inventory), // We encode data according to our configuration.
+                main.getInventoryDataHandler().encodeItems(armor),
+                false,
+                p
             );
 
             main.getInventoryDataHandler().onDataSaveFunction(p, false, inventory, armor);

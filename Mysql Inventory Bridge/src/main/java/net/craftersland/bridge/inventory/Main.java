@@ -1,6 +1,7 @@
 package net.craftersland.bridge.inventory;
 
-import io.mymetaverse.livewallet.api.MetaWalletAPI;
+import java.util.logging.Logger;
+
 import lombok.Getter;
 import net.craftersland.bridge.inventory.database.ConnectionHandler;
 import net.craftersland.bridge.inventory.database.InvMysqlInterface;
@@ -9,7 +10,6 @@ import net.craftersland.bridge.inventory.events.InventoryClick;
 import net.craftersland.bridge.inventory.events.PlayerJoin;
 import net.craftersland.bridge.inventory.events.PlayerQuit;
 import net.craftersland.bridge.inventory.hooks.AdvancedMobArenaListener;
-import net.craftersland.bridge.inventory.hooks.WalletHandler;
 import net.craftersland.bridge.inventory.jedisbridge.Bridge;
 import net.craftersland.bridge.inventory.jedisbridge.InventoryPusher;
 import net.craftersland.bridge.inventory.migrator.DataMigrator;
@@ -24,25 +24,21 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.logging.Logger;
-
 public class Main extends JavaPlugin {
 
     public static Logger log;
-    public boolean useProtocolLib = false;
     public static String pluginName = "MysqlInventoryBridge";
     //public Set<String> playersSync = new HashSet<String>();
     public static boolean is19Server = true;
     public static boolean is13Server = false;
     public static boolean isDisabling = false;
-
     private static ConfigHandler configHandler;
     private static SoundHandler sH;
     private static MysqlSetup databaseManager;
     private static InvMysqlInterface invMysqlInterface;
     private static InventoryDataHandler idH;
     private static BackgroundTask bt;
-
+    public boolean useProtocolLib = false;
     @Getter
     private ConnectionHandler connectionHandler;
 
@@ -51,9 +47,6 @@ public class Main extends JavaPlugin {
 
     @Getter
     private InventoryPusher inventoryPusher;
-
-    @Getter
-    private WalletHandler walletHandler;
 
     @Override
     public void onEnable() {
@@ -98,14 +91,6 @@ public class Main extends JavaPlugin {
         // Loading Redis inventory bridge.
         this.bridge = new Bridge(this);
 
-        // Register WalletHandler
-        JavaPlugin walletPlugin = null;
-        try {
-            walletPlugin = MetaWalletAPI.getInstance().getPlugin();
-        } catch (Exception ignored) {
-        }
-        this.walletHandler = new WalletHandler(walletPlugin);
-
         log.info(pluginName + " loaded successfully!");
 
     }
@@ -149,19 +134,23 @@ public class Main extends JavaPlugin {
         String[] serverVersion = Bukkit.getBukkitVersion().split("-");
         String version = serverVersion[0];
 
-        if (version.matches("1.7.10") || version.matches("1.7.9") || version.matches("1.7.5") || version.matches("1.7.2") || version.matches("1.8.8") || version.matches("1.8.3") || version.matches("1.8.4") || version.matches("1.8")) {
+        if (version.matches("1.7.10") || version.matches("1.7.9") || version.matches("1.7.5") || version.matches(
+            "1.7.2") || version.matches("1.8.8") || version.matches("1.8.3") || version.matches(
+            "1.8.4") || version.matches("1.8")) {
             is19Server = false;
             return true;
         } else if (version.matches("1.13") || version.matches("1.13.1") || version.matches("1.13.2")) {
             is13Server = true;
             return true;
-        } else if (version.matches("1.14") || version.matches("1.14.1") || version.matches("1.14.2") || version.matches("1.14.3") || version.matches("1.14.4")) {
+        } else if (version.matches("1.14") || version.matches("1.14.1") || version.matches("1.14.2") || version.matches(
+            "1.14.3") || version.matches("1.14.4")) {
             is13Server = true;
             return true;
         } else if (version.matches("1.15") || version.matches("1.15.1") || version.matches("1.15.2")) {
             is13Server = true;
             return true;
-        } else if (version.matches("1.16") || version.matches("1.16.1") || version.matches("1.16.2") || version.matches("1.16.3")) {
+        } else if (version.matches("1.16") || version.matches("1.16.1") || version.matches("1.16.2") || version.matches(
+            "1.16.3")) {
             is13Server = true;
             return true;
         }
@@ -180,7 +169,8 @@ public class Main extends JavaPlugin {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
+        @NotNull String[] args) {
 
         if (command.getName().equals("mib")) {
 
@@ -205,11 +195,12 @@ public class Main extends JavaPlugin {
                     try {
                         DataMigrator.migrateServer(this, unixTime);
                     } catch (Exception ex) {
-                        sender.sendMessage(ChatColor.RED + "Migration failed with message: " + ex.getLocalizedMessage());
+                        sender.sendMessage(
+                            ChatColor.RED + "Migration failed with message: " + ex.getLocalizedMessage());
                         ex.printStackTrace();
                     } finally {
                         sender.sendMessage(ChatColor.YELLOW + "Migration try in: " + ChatColor.AQUA
-                                + (System.currentTimeMillis() - now) + " milliseconds.");
+                            + (System.currentTimeMillis() - now) + " milliseconds.");
                     }
 
                     sender.sendMessage(ChatColor.GREEN + "Migration finished.");
